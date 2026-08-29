@@ -37,6 +37,7 @@ ENHANCED_RESULT_FILES = [
     "trade_ledger.csv",
     "trade_events.csv",
     "replay_index.json",
+    "beta_profile.csv",
 ]
 
 def sha_file(path: Path) -> str:
@@ -148,7 +149,7 @@ def make_manifest(repo_root:Path,latest:Path):
     content_hash=content_h.hexdigest()
 
     manifest={
-        "schema_version":4,
+        "schema_version":5,
         "official_result":True,
         "official_result_policy":"PHASE2_ONLY",
         "phase":"PHASE2_LOW_TURNOVER",
@@ -176,7 +177,7 @@ def append_run_if_changed(repo_root:Path,manifest:dict,lb:list,force=False):
     runs_dir=repo_root/"runs"
     runs_dir.mkdir(parents=True,exist_ok=True)
     index_path=runs_dir/"index.json"
-    idx=read_json(index_path,{"schema_version":4,"official_result_policy":"PHASE2_ONLY","runs":[]})
+    idx=read_json(index_path,{"schema_version":5,"official_result_policy":"PHASE2_ONLY","runs":[]})
     if not isinstance(idx.get("runs"),list):
         idx["runs"]=[]
 
@@ -217,7 +218,7 @@ def append_run_if_changed(repo_root:Path,manifest:dict,lb:list,force=False):
         run_manifest={**manifest,"run_id":run_id,"run_number":n}
         (rd/"manifest.json").write_text(json.dumps(run_manifest,indent=2,ensure_ascii=False),encoding="utf-8")
 
-        idx["schema_version"]=4
+        idx["schema_version"]=5
         idx["official_result_policy"]="PHASE2_ONLY"
         idx["runs"].append({
             "run_id":run_id,"run_number":n,"phase":"PHASE2_LOW_TURNOVER",
@@ -230,7 +231,7 @@ def append_run_if_changed(repo_root:Path,manifest:dict,lb:list,force=False):
         index_path.write_text(json.dumps(idx,indent=2,ensure_ascii=False),encoding="utf-8")
 
     state={
-        "schema_version":4,
+        "schema_version":5,
         "official_result_policy":"PHASE2_ONLY",
         "phase":"PHASE2_LOW_TURNOVER",
         "official_result":True,
