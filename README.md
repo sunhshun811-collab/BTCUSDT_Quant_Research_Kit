@@ -1,47 +1,24 @@
-# BTCUSDT Quant Research Kit — Web Dashboard v2
+# BTCUSDT Quant Research Kit
 
-这是 BTCUSDT Binance USD-M 永续合约 1min 量化研究框架的“固定网址 Dashboard”版本。
+This repository is the authoritative research archive and visualization project.
 
-## 核心变化
+## Architecture
 
-- `docs/index.html` 是长期固定网页入口。
-- 每次研究后只更新同一个网页，不再生成一堆独立网页。
-- `.github/workflows/deploy-pages.yml` 负责自动部署 GitHub Pages。
-- `PUBLISH_DASHBOARD.ps1` 负责在 VS Code PowerShell 中一键提交并推送最新 Dashboard。
-- `SYNC_DASHBOARD.ps1` 把本地研究报告同步到固定网站入口。
-- 原始数据和 API 密钥默认不会进入 Git 仓库。
+- `research/` — versioned mirror of the local research code/configuration. Raw market data is never committed.
+- `official/latest/` — the only current official result (`PHASE2_LOW_TURNOVER`).
+- `runs/` — immutable official research history.
+- `site/` — GitHub-only visualization source.
+- `.github/workflows/deploy-pages.yml` — GitHub Actions build/deploy pipeline.
+- `tools/local_publisher/` — GitHub-side/local-cache synchronization tooling.
 
-## 网站工作流
+The Windows Desktop research workspace is intentionally compute-only and contains no dashboard, HTML, Pages, or visualization source code.
 
-研究：
+## Official visualization
 
-```powershell
-python .\run_demo.py
-```
+https://sunhshun811-collab.github.io/BTCUSDT_Quant_Research_Kit/
 
-发布：
+The web site is built on GitHub Actions from `official/latest/`; no HTML is generated in the Desktop research folder.
 
-```powershell
-.\PUBLISH_DASHBOARD.ps1 -Message "Update research dashboard"
-```
+## Official result policy
 
-之后直接刷新固定 GitHub Pages URL 即可查看最新结果。
-
-## 当前状态
-
-当前网页中的 Alpha / Sharpe / IC / Equity Curve 仍然是 DEMO 数据，仅用于验证整个网页和发布流程。
-
-正式研究需要接入真实 BTCUSDT 2020-01-01 至 2026-01-01 1min 数据。
-
-## 数据切分
-
-- Train: 2020-01-01 00:00 UTC → 2023-08-08 04:48 UTC
-- Validation: 2023-08-08 04:48 UTC → 2024-10-19 14:24 UTC
-- Test: 2024-10-19 14:24 UTC → 2026-01-01 00:00 UTC
-- Test locked: YES
-
-## 第一次上线
-
-查看：
-
-`SETUP_GITHUB_PAGES.md`
+Only `PHASE2_LOW_TURNOVER` is the current official baseline. Earlier Phase1 experiments remain recoverable through Git history but are not part of the current official state.

@@ -1,0 +1,13 @@
+{
+  "schema_version": 4,
+  "official_result_policy": "PHASE2_ONLY",
+  "phase": "PHASE2_LOW_TURNOVER",
+  "official_result": true,
+  "latest_run_id": "RUN_0001_PHASE2_LOW_TURNOVER_20260829_171736",
+  "content_hash": "e85311c459a1413df6514e2d57d7645a98b717459b23395fbc1b8cfde5dbb2e2",
+  "research_code_hash": "f84c738faf9fc32249b11dc4061da5eeac1da11bee2d3f286f56efdfd439ff9e",
+  "updated_at_utc": "2026-08-29T17:17:36.508967+00:00",
+  "test_locked": true,
+  "alphas_researched": 17,
+  "candidate_count": 1
+}

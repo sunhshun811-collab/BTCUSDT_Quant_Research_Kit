@@ -1,0 +1,26 @@
+{
+  "schema_version": 4,
+  "official_result": true,
+  "official_result_policy": "PHASE2_ONLY",
+  "phase": "PHASE2_LOW_TURNOVER",
+  "created_at_utc": "2026-08-29T17:17:36.444694+00:00",
+  "content_hash": "e85311c459a1413df6514e2d57d7645a98b717459b23395fbc1b8cfde5dbb2e2",
+  "research_code_hash": "f84c738faf9fc32249b11dc4061da5eeac1da11bee2d3f286f56efdfd439ff9e",
+  "test_locked": true,
+  "test_start": "2024-10-19 14:24:00+00:00",
+  "visible_start": "2020-01-01 00:00:00+00:00",
+  "visible_end": "2024-10-19 14:23:00+00:00",
+  "rows_visible": 2525184,
+  "alphas_researched": 17,
+  "candidate_count": 1,
+  "files": {
+    "alpha_leaderboard.csv": "cab8d5968693f0aaf4bbf890d387d83a620753a613d06efdfa74429fe9a8a72c",
+    "cost_sensitivity.csv": "96dada249f76f0436492f5f8f446a12dbea5e2c1451c4d47c883095d3880a2cb",
+    "data_quality.json": "130bdf60e41ec8f03307a470100c909485077f24fefe541503787288000d4492",
+    "phase2_low_turnover_config.json": "4d0e09a34f33bfac57ed03a582ec70a0078389714951ba023cca6db2d83a6565",
+    "summary.json": "2ae117a1aedce1a31d0dea4741bc8e6060a593cbf655a4b951f7a40a705dec55",
+    "yearly_metrics.csv": "c80bb1a087b10ae5a7d8f5c369baf74a2a37c1d4faedbe49e7d862a05a44ecd6"
+  },
+  "run_id": "RUN_0001_PHASE2_LOW_TURNOVER_20260829_171736",
+  "run_number": 1
+}
