@@ -1,0 +1,31 @@
+{
+  "schema_version": 5,
+  "official_result": true,
+  "official_result_policy": "PHASE2_ONLY",
+  "phase": "PHASE2_LOW_TURNOVER",
+  "created_at_utc": "2026-08-29T20:31:53.899220+00:00",
+  "content_hash": "8219e107189b1f4d73b8733a76714df812f9f8b1bcf0821e1e859e22baa646cd",
+  "research_code_hash": "72dd20c6c4bc10a0306c78f039c5c583a958f015bece79d26fb9b192b27fa501",
+  "test_locked": true,
+  "test_start": "2024-10-19 14:24:00+00:00",
+  "visible_start": "2020-01-01 00:00:00+00:00",
+  "visible_end": "2024-10-19 14:23:00+00:00",
+  "rows_visible": 2525184,
+  "alphas_researched": 17,
+  "candidate_count": 1,
+  "files": {
+    "alpha_leaderboard.csv": "613cabb9c0d58ed27fdb636a937851c27541dc97b4a1da0b2cb9f4a3e6d03441",
+    "beta_profile.csv": "3bb2a53bf5f1a6956b0f7577d9a79e2126ead75c2f2bac6a8fa8af31a333206b",
+    "cost_sensitivity.csv": "96dada249f76f0436492f5f8f446a12dbea5e2c1451c4d47c883095d3880a2cb",
+    "data_quality.json": "130bdf60e41ec8f03307a470100c909485077f24fefe541503787288000d4492",
+    "factor_diagnostics.csv": "20b1bc54bd1f7377e3375d9dd20f109084da7952fc13824b1ad74f3caafafb05",
+    "phase2_low_turnover_config.json": "61acb3d5d52fc9eedd2c55045d83135911c73d1317561adb50a3b8c7caa974b5",
+    "replay_index.json": "1e430057b7bdc4f4ed63e02c9a4db91e06c077431ae588f6fdbae2fe6b6620e4",
+    "summary.json": "e074e8cd9929bee150a80497bbb69cce8971dc21d97af14726649408f029d266",
+    "trade_events.csv": "8743312193d9453ee295f60b53ad79fcd87e7d5490d05682ba9650d260801ab2",
+    "trade_ledger.csv": "9d66217381f9890622e7141bdb7e44aa8ff19dbd3f4673d5c408fc337860c56a",
+    "yearly_metrics.csv": "c80bb1a087b10ae5a7d8f5c369baf74a2a37c1d4faedbe49e7d862a05a44ecd6"
+  },
+  "run_id": "RUN_0003_PHASE2_LOW_TURNOVER_20260829_203153",
+  "run_number": 3
+}

@@ -38,11 +38,22 @@
     "require_positive_validation_return": true
   },
   "diagnostics": {
+    "margin_fraction": 0.1,
     "leverage": 10,
-    "warning_adverse_move": 0.07,
-    "danger_adverse_move": 0.09,
+    "isolated_margin": true,
+    "fixed_entry_notional_fraction_of_account": 1.0,
+    "no_pyramiding": true,
+    "execution_price": "bar_open",
+    "execution_timing": "position state at t uses information through t-1; execute at t open",
     "direction_asymmetry_ratio": 1.75,
-    "replay_bar_minutes": 15,
-    "notes": "Diagnostics only. No new alpha logic. 10x risk uses adverse-price-move proxy, not exact Binance liquidation."
+    "rolling_beta_windows_minutes": [
+      60,
+      240,
+      1440
+    ],
+    "replay_overview_bar_minutes": 15,
+    "replay_detail_bar_minutes": 1,
+    "display_timezone": "Asia/Shanghai",
+    "liquidation_note": "10x isolated-margin stress proxy only; exact Binance liquidation requires historical Mark Price and maintenance-margin tiers."
   }
 }

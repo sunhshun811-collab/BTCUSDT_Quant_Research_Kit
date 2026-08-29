@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "description": "Canonical Alpha registry. New logic gets a new alpha_id.",
+  "families": [
+    "Momentum / Trend",
+    "Mean Reversion",
+    "Order Flow",
+    "Liquidity / Microstructure",
+    "Volatility",
+    "Carry / Funding",
+    "Relative Value",
+    "Beta / Residual"
+  ],
+  "alphas": []
+}

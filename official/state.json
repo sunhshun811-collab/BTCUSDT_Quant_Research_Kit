@@ -1,12 +1,12 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "official_result_policy": "PHASE2_ONLY",
   "phase": "PHASE2_LOW_TURNOVER",
   "official_result": true,
-  "latest_run_id": "RUN_0002_PHASE2_LOW_TURNOVER_20260829_185756",
-  "content_hash": "2e47ad11a0108745b6e4891624ea641e925d5f7ee1b949b34f0586d785375780",
-  "research_code_hash": "4cbd7ceabaae66b62cec261157b088d11a9869d33955780f27afb607196de47b",
-  "updated_at_utc": "2026-08-29T18:57:56.533732+00:00",
+  "latest_run_id": "RUN_0003_PHASE2_LOW_TURNOVER_20260829_203153",
+  "content_hash": "8219e107189b1f4d73b8733a76714df812f9f8b1bcf0821e1e859e22baa646cd",
+  "research_code_hash": "72dd20c6c4bc10a0306c78f039c5c583a958f015bece79d26fb9b192b27fa501",
+  "updated_at_utc": "2026-08-29T20:31:53.988226+00:00",
   "test_locked": true,
   "alphas_researched": 17,
   "candidate_count": 1
