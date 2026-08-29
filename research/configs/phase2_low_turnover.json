@@ -14,11 +14,20 @@
   },
   "costs": {
     "base_cost_bps_one_way": 6.0,
-    "sensitivity_bps_one_way": [0.0, 2.0, 6.0, 10.0],
+    "sensitivity_bps_one_way": [
+      0.0,
+      2.0,
+      6.0,
+      10.0
+    ],
     "include_actual_funding": true
   },
   "evaluation": {
-    "forward_return_horizons_minutes": [15, 60, 240],
+    "forward_return_horizons_minutes": [
+      15,
+      60,
+      240
+    ],
     "ic_sample_every_minutes": 15,
     "validation_net_sharpe_min": 0.5,
     "train_max_drawdown_floor": -0.35,
@@ -27,5 +36,13 @@
     "min_positive_validation_year_fraction": 1.0,
     "require_positive_train_sharpe": true,
     "require_positive_validation_return": true
+  },
+  "diagnostics": {
+    "leverage": 10,
+    "warning_adverse_move": 0.07,
+    "danger_adverse_move": 0.09,
+    "direction_asymmetry_ratio": 1.75,
+    "replay_bar_minutes": 15,
+    "notes": "Diagnostics only. No new alpha logic. 10x risk uses adverse-price-move proxy, not exact Binance liquidation."
   }
 }
