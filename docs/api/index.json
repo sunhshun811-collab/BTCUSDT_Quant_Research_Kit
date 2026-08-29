@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "purpose": "Machine-readable mirror of compact BTCUSDT research artifacts.",
-  "latest_run_id": "RUN_0001_REAL_PHASE1_20260829_153402",
+  "latest_run_id": "RUN_0001_PHASE2_LOW_TURNOVER_20260829_165120",
   "latest": {
     "research_state": "api/latest/research_state.json",
     "manifest": "api/latest/manifest.json",

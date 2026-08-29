@@ -1,0 +1,31 @@
+{
+  "symbol": "BTCUSDT",
+  "interval": "1m",
+  "research_start": "2020-01-01T00:00:00Z",
+  "train_end": "2023-08-08T04:48:00Z",
+  "validation_end": "2024-10-19T14:24:00Z",
+  "test_end": "2026-01-01T00:00:00Z",
+  "test_locked": true,
+  "signal": {
+    "normalization_lookback_minutes": 10080,
+    "clip_z": 3.0,
+    "position_cap": 1.0,
+    "position_step": 0.1
+  },
+  "costs": {
+    "base_cost_bps_one_way": 6.0,
+    "sensitivity_bps_one_way": [0.0, 2.0, 6.0, 10.0],
+    "include_actual_funding": true
+  },
+  "evaluation": {
+    "forward_return_horizons_minutes": [15, 60, 240],
+    "ic_sample_every_minutes": 15,
+    "validation_net_sharpe_min": 0.5,
+    "train_max_drawdown_floor": -0.35,
+    "validation_max_drawdown_floor": -0.35,
+    "min_positive_train_year_fraction": 0.75,
+    "min_positive_validation_year_fraction": 1.0,
+    "require_positive_train_sharpe": true,
+    "require_positive_validation_return": true
+  }
+}

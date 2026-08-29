@@ -1,17 +1,14 @@
 {
-  "schema_version": 1,
-  "latest_run_id": "RUN_0001_REAL_PHASE1_20260829_153402",
-  "latest_run_path": "runs/RUN_0001_REAL_PHASE1_20260829_153402",
-  "phase": "REAL_PHASE1",
-  "updated_at_utc": "2026-08-29T15:34:02.586889+00:00",
+  "schema_version": 3,
+  "official_result_policy": "PHASE2_ONLY",
+  "latest_run_id": "RUN_0001_PHASE2_LOW_TURNOVER_20260829_165120",
+  "latest_run_path": "runs/RUN_0001_PHASE2_LOW_TURNOVER_20260829_165120",
+  "phase": "PHASE2_LOW_TURNOVER",
+  "official_result": true,
+  "updated_at_utc": "2026-08-29T16:51:20.353885+00:00",
   "test_locked": true,
-  "alphas_researched": 18,
-  "phase1_candidates": 0,
-  "source_git_commit": "b10e0a8cd6eb4dabb9de17030e5e1861f11f6b18",
-  "stable_files": {
-    "manifest": "latest/manifest.json",
-    "summary": "latest/research_summary.md",
-    "leaderboard": "latest/alpha_leaderboard.csv",
-    "data_quality": "latest/data_quality.json"
-  }
+  "alphas_researched": 17,
+  "candidate_count": 1,
+  "result_source": "results/phase2_low_turnover",
+  "report_source": "reports/phase2_low_turnover_dashboard.html"
 }
