@@ -1,4 +1,15 @@
+﻿<!-- DASHBOARD_QUICK_LINK_START -->
+
 # BTCUSDT Quant Research Kit
+
+> ## 📊 [打开官方量化研究 Dashboard](https://sunhshun811-collab.github.io/BTCUSDT_Quant_Research_Kit/)
+>
+> **固定可视化入口：** [https://sunhshun811-collab.github.io/BTCUSDT_Quant_Research_Kit/](https://sunhshun811-collab.github.io/BTCUSDT_Quant_Research_Kit/)  
+> 当前官方结果：**PHASE2_LOW_TURNOVER** · Test Locked
+
+---
+
+<!-- DASHBOARD_QUICK_LINK_END -->
 
 This repository is the authoritative research archive and visualization project.
 
@@ -22,3 +33,4 @@ The web site is built on GitHub Actions from `official/latest/`; no HTML is gene
 ## Official result policy
 
 Only `PHASE2_LOW_TURNOVER` is the current official baseline. Earlier Phase1 experiments remain recoverable through Git history but are not part of the current official state.
+
