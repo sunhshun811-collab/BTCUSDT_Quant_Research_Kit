@@ -32,3 +32,10 @@ a{color:var(--accent);text-decoration:none}.shell{max-width:1660px;margin:auto;p
 .replayCanvas{width:100%;display:block;background:#091019;border:1px solid var(--line);border-radius:9px}.replayHint{font-size:9px;color:var(--muted);padding:7px 1px}
 .replayTrades{max-height:320px;border-top:1px solid var(--line);margin-top:4px}.replayTrades table{min-width:1000px}
 @media(max-width:1150px){.replayStats{grid-template-columns:repeat(4,1fr)}}@media(max-width:650px){.replayStats{grid-template-columns:repeat(2,1fr)}}
+
+.timeRule{margin-top:12px;padding:8px 10px;border:1px solid #30435a;border-radius:8px;background:#0b1520;color:#9bb1c7;font-size:9px;line-height:1.6}
+.replayCanvasWrap{position:relative}.replayCanvas{height:620px;cursor:crosshair;touch-action:none}
+.replayCrosshairInfo{display:none;position:absolute;pointer-events:none;z-index:4;min-width:210px;padding:7px 9px;border:1px solid #3a4b60;border-radius:7px;background:rgba(8,13,20,.94);color:#dbe5ef;font-size:9px;line-height:1.55;box-shadow:0 8px 25px rgba(0,0,0,.3)}
+.replayBeta{margin:10px 0}.replayTrades tbody tr{cursor:pointer}.replayTrades tbody tr:hover{background:#132235}.replayTrades tbody tr.selected{outline:1px solid #5b93dc;background:#14263c}
+.riskDanger{color:#ff7d86}.riskWarning{color:#eac85f}.riskOk{color:#69d697}
+@media(max-width:800px){.replayCanvas{height:560px}}

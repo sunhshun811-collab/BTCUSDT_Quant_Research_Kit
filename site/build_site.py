@@ -93,6 +93,8 @@ def main(repo: Path,out: Path):
              "costSensitivity":csv_records(latest/"cost_sensitivity.csv"),
              "yearly":csv_records(latest/"yearly_metrics.csv"),
              "factorDiagnostics":csv_records(latest/"factor_diagnostics.csv"),
+             "betaProfile":csv_records(latest/"beta_profile.csv"),
+             "availableFiles":{name:(latest/name).exists() for name in ["factor_diagnostics.csv","beta_profile.csv","trade_ledger.csv","trade_events.csv","replay_index.json"]},
              "replayIndex":read_json(latest/"replay_index.json",{}),
              "runs":read_json(repo/"runs"/"index.json",{"runs":[]}).get("runs",[]),
              "repoUrl":"https://github.com/sunhshun811-collab/BTCUSDT_Quant_Research_Kit",
@@ -119,7 +121,7 @@ def main(repo: Path,out: Path):
         "downloads":{"leaderboard":"../data/latest/alpha_leaderboard.csv","cost_sensitivity":"../data/latest/cost_sensitivity.csv",
                      "yearly_metrics":"../data/latest/yearly_metrics.csv","summary":"../data/latest/summary.json",
                      "manifest":"../data/latest/manifest.json","data_quality":"../data/latest/data_quality.json",
-                     "config":"../data/latest/phase2_low_turnover_config.json"}},indent=2,ensure_ascii=False),encoding="utf-8")
+                     "config":"../data/latest/phase2_low_turnover_config.json","factor_diagnostics":"../data/latest/factor_diagnostics.csv","beta_profile":"../data/latest/beta_profile.csv","trade_ledger":"../data/latest/trade_ledger.csv","trade_events":"../data/latest/trade_events.csv"}},indent=2,ensure_ascii=False),encoding="utf-8")
     print("Built site:",out)
     print("Analysis package:",downloads/"research_package_latest.zip")
     print("Analysis package size MB:",package_info["size_mb"])

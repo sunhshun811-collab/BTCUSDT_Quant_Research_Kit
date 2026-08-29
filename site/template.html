@@ -2,30 +2,30 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">
 <title>BTCUSDT 量化研究</title><link rel="stylesheet" href="assets/dashboard.css">
 </head><body><div class="shell">
-<div class="top"><div class="toprow"><div><div class="brand">BTCUSDT 量化研究</div><div class="sub">Binance USD-M 永续合约 · 官方研究可视化</div></div><div class="badges"><span class="badge good">PHASE2 正式版</span><span class="badge warn">测试集锁定</span><span class="badge">GITHUB ACTIONS</span></div></div>
+<div class="top"><div class="toprow"><div><div class="brand">BTCUSDT 量化研究</div><div class="sub">Binance USD-M 永续合约 · 因子研究与交易风险工作台</div></div><div class="badges"><span class="badge good">PHASE2 正式版</span><span class="badge warn">测试集锁定</span><span class="badge">自动构建</span></div></div>
 <div class="nav"><a href="#overview">总览</a><a href="#leaderboard">排行榜</a><a href="#replay">单因子回放</a><a href="#diagnostics">诊断</a><a href="#cost">成本</a><a href="#yearly">年度</a><a href="#families">家族</a><a href="#history">历史</a><a href="#downloads">下载</a></div></div>
-<section id="overview" class="hero"><div class="panel heroMain"><div class="eyebrow">官方结果 · 仅保留 PHASE2</div><div class="title">低换手 Alpha 研究</div><div class="desc">当前唯一官方结果。VS Code 研究完成后自动同步 GitHub；GitHub Actions 自动重建本页面和 ChatGPT 分析包。</div>
+<section id="overview" class="hero"><div class="panel heroMain"><div class="eyebrow">官方结果 · 仅保留 PHASE2</div><div class="title">现有因子 · Alpha / Beta / 10x 风险研究</div><div class="desc">不新增 Alpha。保留原 Phase2 指标，同时用固定“单 Alpha + 10%逐仓保证金 + 10x杠杆”模型分析多空、Beta、MAE 与真实买卖点。</div>
 <div class="heroActions"><a id="analysisPackageTop" class="primaryDownload" href="downloads/research_package_latest.zip" download>⬇ 一键下载 ChatGPT 分析包</a><span id="analysisPackageMeta" class="packageMeta">正在读取最新分析包信息…</span></div>
-</div><div class="panel status" id="status"></div></section>
+<div class="timeRule">本页面所有日期与时间均显示为北京时间（UTC+8）；底层研究数据、回测索引及 Train / Validation / Test 边界仍严格使用 UTC。</div></div><div class="panel status" id="status"></div></section>
 <div class="cards" id="cards"></div>
-<section id="leaderboard" class="section"><div class="sectionTitle">Alpha 排行榜</div><div class="sectionSub">支持搜索、Family / Candidate 筛选与列排序</div><div class="panel tablePanel"><div class="toolbar"><input id="search" placeholder="搜索 Alpha / Family / 假设"><select id="familyFilter"><option value="">全部 Family</option></select><select id="candidateFilter"><option value="">全部状态</option><option value="true">候选</option><option value="false">研究</option></select></div><div class="tableWrap"><table id="leaderboardTable"></table></div></div></section>
+<section id="leaderboard" class="section"><div class="sectionTitle">现有因子总览</div><div class="sectionSub">同时查看原 Phase2 指标与固定 10%逐仓保证金 × 10x 单因子模型的方向、Beta、Residual Sharpe 和持仓风险</div><div class="panel tablePanel"><div class="toolbar"><input id="search" placeholder="搜索 Alpha / Family / 假设"><select id="familyFilter"><option value="">全部 Family</option></select><select id="candidateFilter"><option value="">全部状态</option><option value="true">原 Phase2 候选</option><option value="false">原 Phase2 研究</option></select></div><div class="tableWrap"><table id="leaderboardTable"></table></div></div></section>
 
 <section id="replay" class="section">
   <div class="sectionTitle">单因子交易回放</div>
-  <div class="sectionSub">只使用一个现有量化因子，查看历史 K 线中的买点、卖点、开空、平空与持仓区间；同时显示多空拆分、Beta 与 10x 持仓风险。</div>
+  <div class="sectionSub">固定一次只使用一个现有量化因子；每笔交易使用账户权益 10% 作为逐仓保证金、10x 杠杆（名义敞口约等于账户权益 100%）。买卖点严格按 t-1 信息形成信号、t 分钟 Open 执行。</div>
   <div class="panel replayPanel">
     <div class="replayToolbar">
       <label>因子<select id="replayAlpha"></select></label>
       <label>月份<select id="replayMonth"></select></label>
       <label>方向<select id="replaySide"><option value="">全部</option><option value="LONG">多头</option><option value="SHORT">空头</option></select></label>
-      <button id="replayPrev">← 上月</button><button id="replayNext">下月 →</button>
+      <button id="replayPrev">← 上月</button><button id="replayNext">下月 →</button><button id="replayOverview" disabled>返回 15min 月度概览</button>
     </div>
     <div id="replayNotice" class="replayNotice"></div>
     <div id="replayStats" class="replayStats"></div>
     <div class="replayLegend"><span class="lg long">多头持仓</span><span class="lg short">空头持仓</span><span>▲ 开多 / ▼ 平多</span><span>▼ 开空 / ▲ 平空</span></div>
-    <canvas id="replayCanvas" class="replayCanvas" height="430"></canvas>
-    <div class="replayHint">K 线为由 1min 数据聚合出的 15min 显示数据；交易信号与持仓统计仍来自原始 1min 策略轨迹。</div>
-    <div class="tableWrap replayTrades"><table id="replayTradesTable"></table></div>
+    <div class="replayCanvasWrap"><canvas id="replayCanvas" class="replayCanvas" height="620"></canvas><div id="replayCrosshairInfo" class="replayCrosshairInfo"></div></div>
+    <div class="replayHint">月度概览为 15min K线；点击下方任意持仓可加载该笔交易的原始 1min K线。滚轮缩放、按住拖动、移动鼠标查看十字光标。信号和仓位副图与主图时间轴联动。</div>
+    <div class="replayBeta"><div class="sectionSub">Beta Profile</div><div class="tableWrap"><table id="replayBetaTable"></table></div></div><div class="tableWrap replayTrades"><table id="replayTradesTable"></table></div>
   </div>
 </section>
 
@@ -34,7 +34,7 @@
 <section id="yearly" class="section"><div class="sectionTitle">年度稳定性</div><div class="sectionSub">头部 Alpha 年度净收益</div><div class="panel chart"><div class="svg" id="yearHeat"></div></div></section>
 <section id="families" class="section"><div class="sectionTitle">Alpha 家族</div><div class="sectionSub">Family 聚合表现</div><div class="families" id="familiesGrid"></div></section>
 <section id="history" class="section"><div class="sectionTitle">正式 Run 历史</div><div class="sectionSub">仅显示当前正式研究序列</div><div class="panel tablePanel"><div class="tableWrap"><table id="runsTable"></table></div></div></section>
-<section id="downloads" class="section"><div class="sectionTitle">一键下载分析包</div><div class="sectionSub">把这个 ZIP 直接发给 ChatGPT，我会读取完整结果、研究代码、配置与最新 Run，再给出下一步建议和新的挖因子 ZIP。</div>
+<section id="downloads" class="section"><div class="sectionTitle">一键下载分析包</div><div class="sectionSub">把这个 ZIP 直接发给 ChatGPT，用于分析当前结果。只有你明确要求时，才制定下一阶段研究计划或生成新的挖因子 ZIP。</div>
 <div class="panel packagePanel"><a id="analysisPackageBottom" class="primaryDownload big" href="downloads/research_package_latest.zip" download>⬇ 下载最新 ChatGPT 分析包 ZIP</a><div id="analysisPackageDetail" class="packageDetail">包会在每次 GitHub Pages 部署时自动生成。</div></div>
-<div class="sectionTitle secondaryTitle">单独下载结果文件</div><div class="sectionSub">只有需要单独查看 CSV / JSON 时再使用下面入口。</div><div class="panel downloads"><a class="download" href="data/latest/alpha_leaderboard.csv">排行榜 CSV</a><a class="download" href="data/latest/cost_sensitivity.csv">成本敏感性 CSV</a><a class="download" href="data/latest/yearly_metrics.csv">年度指标 CSV</a><a class="download" href="data/latest/factor_diagnostics.csv">因子 Beta / 多空 / 10x 风险 CSV</a><a class="download" href="data/latest/trade_ledger.csv">持仓区间明细 CSV</a><a class="download" href="data/latest/trade_events.csv">买卖点明细 CSV</a><a class="download" href="data/latest/summary.json">结果摘要</a><a class="download" href="data/latest/manifest.json">Manifest</a><a class="download" href="data/latest/data_quality.json">数据质量</a><a class="download" href="data/latest/phase2_low_turnover_config.json">研究配置</a><a class="download" href="https://github.com/sunhshun811-collab/BTCUSDT_Quant_Research_Kit" target="_blank">GitHub 仓库</a></div></section>
+<div class="sectionTitle secondaryTitle">单独下载结果文件</div><div class="sectionSub">只有需要单独查看 CSV / JSON 时再使用下面入口。</div><div class="panel downloads"><a class="download" href="data/latest/alpha_leaderboard.csv">排行榜 CSV</a><a class="download" href="data/latest/cost_sensitivity.csv">成本敏感性 CSV</a><a class="download" href="data/latest/yearly_metrics.csv">年度指标 CSV</a><a class="download" data-requires="factor_diagnostics.csv" href="data/latest/factor_diagnostics.csv">因子 Beta / 多空 / 10x 风险 CSV</a><a class="download" data-requires="beta_profile.csv" href="data/latest/beta_profile.csv">Beta Profile CSV</a><a class="download" data-requires="trade_ledger.csv" href="data/latest/trade_ledger.csv">持仓区间明细 CSV</a><a class="download" data-requires="trade_events.csv" href="data/latest/trade_events.csv">买卖点明细 CSV</a><a class="download" href="data/latest/summary.json">结果摘要</a><a class="download" href="data/latest/manifest.json">Manifest</a><a class="download" href="data/latest/data_quality.json">数据质量</a><a class="download" href="data/latest/phase2_low_turnover_config.json">研究配置</a><a class="download" href="https://github.com/sunhshun811-collab/BTCUSDT_Quant_Research_Kit" target="_blank">GitHub 仓库</a></div></section>
 <div class="footer" id="footer"></div></div><div class="tip" id="tip"></div><script src="assets/dashboard.js"></script></body></html>

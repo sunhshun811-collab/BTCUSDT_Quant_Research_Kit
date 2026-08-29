@@ -9,6 +9,12 @@
   const pct=(v,d=1)=>num(v)==null?"—":(num(v)*100).toFixed(d)+"%";
   const yes=v=>v===true||v===1||String(v).toLowerCase()==="true";
   const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+  const BJ_TZ="Asia/Shanghai",BJ_OFFSET_MS=8*60*60*1000;
+  const bjFmt=new Intl.DateTimeFormat("zh-CN",{timeZone:BJ_TZ,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+  const bjShortFmt=new Intl.DateTimeFormat("zh-CN",{timeZone:BJ_TZ,month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false});
+  const bjTime=v=>{if(v==null||v==="")return"—";const d=new Date(typeof v==="number"?v:String(v));return Number.isNaN(d.getTime())?String(v):bjFmt.format(d).replaceAll("/","-");};
+  const bjShort=v=>{const d=new Date(typeof v==="number"?v:String(v));return Number.isNaN(d.getTime())?"—":bjShortFmt.format(d);};
+  const bjMonthBounds=month=>{const [y,m]=month.split("-").map(Number);return[Date.UTC(y,m-1,1)-BJ_OFFSET_MS,Date.UTC(y,m,1)-BJ_OFFSET_MS];};
   const familyColor=f=>{let h=0;for(const c of String(f))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h} 58% 60%)`;};
   const tip=$("#tip");
   const showTip=(e,html)=>{tip.innerHTML=html;tip.style.display="block";tip.style.left=(e.clientX+12)+"px";tip.style.top=(e.clientY+12)+"px"};
@@ -27,16 +33,16 @@
 
   $("#status").innerHTML=[
     ["正式阶段",state.phase||"PHASE2_LOW_TURNOVER"],
-    ["可见数据",`${summary.visible_start||"—"} → ${summary.visible_end||"—"}`],
+    ["可见数据（北京时间）",`${bjTime(summary.visible_start)} → ${bjTime(summary.visible_end)}`],
     ["基础成本",`${fmt(summary.base_cost_bps_one_way,1)} bps / 单边`],
     ["Funding",yes(summary.funding_included)?"已纳入":"未纳入"],
-    ["测试集起点",summary.test_start||"—"],
+    ["测试集起点（北京时间）",bjTime(summary.test_start)],
     ["Run",(state.latest_run_id||manifest.run_id||"—")]
   ].map(x=>`<div class="statusLine"><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join("");
 
   const cards=[
     ["Alpha 数量",lb.length,"正式 Phase2"],
-    ["候选数量",candidates,"通过筛选"],
+    ["原 Phase2 候选",candidates,"旧筛选标准，仅保留作历史对照"],
     ["最佳验证 Sharpe",fmt(best.val_net_sharpe_daily),"已扣除配置成本"],
     ["最佳验证收益",retVals.length?pct(Math.max(...retVals)):"—","验证集"],
     ["年化换手中位数",fmt(median(lb.map(r=>r.val_annualized_turnover)),1),"验证集"],
@@ -54,16 +60,17 @@
   const pkgFiles=pkg.file_count!=null?`${pkg.file_count} 个文件`:"—";
   const pkgRun=pkg.latest_run_id||state.latest_run_id||manifest.run_id||"—";
   if($("#analysisPackageMeta")) $("#analysisPackageMeta").textContent=`最新 Run：${pkgRun} · ${pkgSize}`;
-  if($("#analysisPackageDetail")) $("#analysisPackageDetail").textContent=`最新 Run：${pkgRun} · ${pkgSize} · ${pkgFiles} · SHA256 ${String(pkg.sha256||"—").slice(0,16)}…`;
+  if($("#analysisPackageDetail")) $("#analysisPackageDetail").textContent=`最新 Run：${pkgRun} · ${pkgSize} · ${pkgFiles} · 生成：${bjTime(pkg.created_at_utc)} · SHA256 ${String(pkg.sha256||"—").slice(0,16)}…`;
 
 
   const columns=[
-    ["alpha_id","Alpha"],["family","Family"],["hypothesis","研究假设"],
-    ["train_net_sharpe_daily","训练 Sharpe"],["val_net_sharpe_daily","验证 Sharpe"],
-    ["val_net_return","验证收益"],["val_max_drawdown","验证回撤"],
-    ["val_ic_15m","IC 15m"],["val_ic_60m","IC 60m"],["val_ic_240m","IC 240m"],
-    ["val_annualized_turnover","年化换手"],["val_gross_bps_per_unit_turnover","每换手毛收益"],
-    ["rebalance_minutes","调仓(分)"],["phase2_candidate","状态"]
+    ["alpha_id","Alpha"],["family","Family"],["direction_type_train","方向类型"],
+    ["val_net_sharpe_daily","原 Val Sharpe"],["fixed_val_net_sharpe_daily","固定10%x10 Val Sharpe"],
+    ["fixed_val_net_return","固定模型 Val收益"],["fixed_val_beta_btc_daily","BTC Beta"],
+    ["fixed_val_beta_eth_daily","ETH Beta"],["fixed_val_residual_sharpe_daily","Residual Sharpe"],
+    ["fixed_val_worst_price_mae","最坏价格MAE"],["fixed_val_worst_margin_equity_mae","最坏10x保证金MAE"],
+    ["fixed_val_min_margin_remaining_fraction","最小保证金剩余"],["fixed_val_10x_danger_trades","危险交易"],
+    ["phase2_candidate","原Phase2状态"]
   ];
   let sortKey="val_net_sharpe_daily",sortAsc=false;
   function renderLeaderboard(){
@@ -83,9 +90,12 @@
     const th="<thead><tr>"+columns.map(([k,n])=>`<th data-k="${k}">${esc(n)}${sortKey===k?(sortAsc?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead>";
     const body="<tbody>"+rows.map(r=>`<tr class="${yes(r.phase2_candidate)?"candidate":""}" data-id="${esc(r.alpha_id)}">`+columns.map(([k])=>{
       const v=r[k];
-      if(k==="phase2_candidate") return `<td><span class="pill ${yes(v)?"pass":"research"}">${yes(v)?"通过":"研究"}</span></td>`;
+      if(k==="phase2_candidate") return `<td><span class="pill ${yes(v)?"pass":"research"}">${yes(v)?"原Phase2候选":"原Phase2研究"}</span></td>`;
+      if(k==="direction_type_train") return `<td>${esc(directionCn(v))}</td>`;
+      if(k==="fixed_val_net_return"||k.includes("mae")||k==="fixed_val_min_margin_remaining_fraction") return `<td>${pct(v,2)}</td>`;
+      if(k==="fixed_val_10x_danger_trades") return `<td class="${Number(v)>0?"riskDanger":"riskOk"}">${fmt(v,0)}</td>`;
       if(k==="val_net_return"||k==="val_max_drawdown") return `<td>${pct(v)}</td>`;
-      if(k.includes("sharpe")||k.includes("ic_")||k==="val_gross_bps_per_unit_turnover") return `<td>${fmt(v,k.includes("ic_")?4:2)}</td>`;
+      if(k.includes("sharpe")||k.includes("beta_")||k.includes("ic_")||k==="val_gross_bps_per_unit_turnover") return `<td>${fmt(v,k.includes("ic_")?4:2)}</td>`;
       if(k==="val_annualized_turnover") return `<td>${fmt(v,1)}</td>`;
       return `<td title="${esc(v)}">${esc(v)}</td>`;
     }).join("")+"</tr>").join("")+"</tbody>";
@@ -98,7 +108,7 @@
     document.querySelectorAll("#leaderboardTable tbody tr").forEach(tr=>tr.onclick=e=>{
       const r=lb.find(x=>String(x.alpha_id)===tr.dataset.id);
       if(!r)return;
-      showTip(e,`<b>${esc(r.alpha_id)}</b><br>${esc(r.family)}<br><span style="color:#92a4b8">${esc(r.hypothesis)}</span><br><br>调仓 ${fmt(r.rebalance_minutes,0)} 分钟 · 半衰期 ${fmt(r.smoothing_halflife_minutes,0)} 分钟 · No-trade band ${fmt(r.no_trade_band,2)}`);
+      showTip(e,`<b>${esc(r.alpha_id)}</b><br>${esc(r.family)} · ${esc(directionCn(r.direction_type_train))}<br><span style="color:#92a4b8">${esc(r.hypothesis)}</span><br><br>固定模型：10%逐仓保证金 × 10x · BTC Beta ${fmt(r.fixed_val_beta_btc_daily,3)} · Residual Sharpe ${fmt(r.fixed_val_residual_sharpe_daily,2)} · 最坏价格MAE ${pct(r.fixed_val_worst_price_mae,2)}`);
       setTimeout(hideTip,4500);
     });
   }
@@ -185,172 +195,62 @@
   $("#familiesGrid").innerHTML=fams.map(f=>`<div class="panel family"><h3>${esc(f.family)}</h3><div class="mline"><span>Alpha 数</span><b>${f.count}</b></div><div class="mline"><span>候选数</span><b>${f.candidates}</b></div><div class="mline"><span>最佳 Alpha</span><b>${esc(f.bestAlpha)}</b></div><div class="mline"><span>最佳验证 Sharpe</span><b>${fmt(f.bestSharpe)}</b></div><div class="mline"><span>平均验证 Sharpe</span><b>${fmt(f.avgSharpe)}</b></div><div class="mline"><span>换手中位数</span><b>${fmt(f.avgTurn,1)}</b></div></div>`).join("");
 
   const runs=[...(D.runs||[])].filter(r=>!String(r.phase||"").toUpperCase().includes("PHASE1")).reverse();
-  const rcols=[["run_id","Run"],["phase","阶段"],["created_at_utc","UTC 时间"],["alphas_researched","Alpha 数"],["candidate_count","候选数"],["test_locked","测试集锁定"]];
-  $("#runsTable").innerHTML="<thead><tr>"+rcols.map(x=>`<th>${x[1]}</th>`).join("")+"</tr></thead><tbody>"+(runs.length?runs.map(r=>"<tr>"+rcols.map(([k])=>`<td>${k==="test_locked"?(yes(r[k])?"是":"否"):esc(r[k]??"—")}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${rcols.length}" style="text-align:left;color:#92a4b8">当前仅有一个正式 Phase2 基线；后续运行会自动追加。</td></tr>`)+"</tbody>";
+  const rcols=[["run_id","Run"],["phase","阶段"],["created_at_utc","北京时间"],["alphas_researched","Alpha 数"],["candidate_count","原Phase2候选数"],["test_locked","测试集锁定"]];
+  $("#runsTable").innerHTML="<thead><tr>"+rcols.map(x=>`<th>${x[1]}</th>`).join("")+"</tr></thead><tbody>"+(runs.length?runs.map(r=>"<tr>"+rcols.map(([k])=>`<td>${k==="test_locked"?(yes(r[k])?"是":"否"):k==="created_at_utc"?esc(bjTime(r[k])):esc(r[k]??"—")}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${rcols.length}" style="text-align:left;color:#92a4b8">当前仅有一个正式 Phase2 基线；后续运行会自动追加。</td></tr>`)+"</tbody>";
 
 
-  // ---- Existing-factor trade replay / Beta / 10x risk ----
-  const fdiag=[...(D.factorDiagnostics||[])];
-  const replayIndex=D.replayIndex||{};
-  const replayAlpha=$("#replayAlpha"), replayMonth=$("#replayMonth"), replaySide=$("#replaySide");
-  let currentFactorReplay=null,currentMarket=null;
-
+  // ---- Existing-factor fixed 10% margin x 10x replay / Beta / risk ----
+  const fdiag=[...(D.factorDiagnostics||[])],betaProfile=[...(D.betaProfile||[])],replayIndex=D.replayIndex||{},available=D.availableFiles||{};
+  document.querySelectorAll("[data-requires]").forEach(a=>{if(!available[a.dataset.requires])a.style.display="none"});
+  const replayAlpha=$("#replayAlpha"),replayMonth=$("#replayMonth"),replaySide=$("#replaySide");
+  let currentFactorReplay=null,currentMarket=null,currentSignals=[],currentResolution=15,selectedTrade=null;
+  let viewStartMs=null,viewEndMs=null,dragging=false,dragX=0,dragStartA=0,dragStartB=0;
   function diagFor(id){return fdiag.find(x=>String(x.alpha_id)===String(id))||{}}
-  function riskText(v){const x=String(v||"");return x==="DANGER"?"危险":x==="WARNING"?"警告":x==="OK"?"正常":x||"—"}
-  function actionCn(a){return ({
-    OPEN_LONG:"开多",CLOSE_LONG:"平多",OPEN_SHORT:"开空",CLOSE_SHORT:"平空",
-    FLIP_TO_SHORT:"反手做空",FLIP_TO_LONG:"反手做多",ADD_LONG:"加多",REDUCE_LONG:"减多",
-    ADD_SHORT:"加空",REDUCE_SHORT:"减空",POSITION_CHANGE:"调仓"
-  })[a]||a}
+  function riskText(v){return v==="DANGER"?"危险":v==="WARNING"?"警告":v==="OK"?"正常":v||"—"}
   function sideCn(s){return s==="LONG"?"多头":s==="SHORT"?"空头":s||"—"}
   function directionCn(s){return ({LONG_ONLY:"多头因子",SHORT_ONLY:"空头因子",LONG_SHORT:"多空双向",ASYMMETRIC_LS:"非对称多空",UNRESOLVED:"未定型"})[s]||s||"—"}
-
-  function fillReplaySelectors(){
-    const alphas=(replayIndex.alphas||[]);
-    if(!alphas.length){
-      $("#replayNotice").textContent="当前正式结果还没有生成交易回放数据。安装分析升级后，重新运行一次现有 17 个因子即可生成；不会新增 Alpha。";
-      replayAlpha.disabled=true;replayMonth.disabled=true;replaySide.disabled=true;
-      return false;
-    }
-    replayAlpha.innerHTML=alphas.map(a=>`<option value="${esc(a.alpha_id)}">${esc(a.alpha_id)} · ${esc(directionCn(a.direction_type_train))}</option>`).join("");
-    replayMonth.innerHTML=(replayIndex.months||[]).map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join("");
-    if(replayIndex.months?.length) replayMonth.value=replayIndex.months[replayIndex.months.length-1];
-    $("#replayNotice").textContent=`Test 仍锁定。K线显示 ${replayIndex.bar_minutes||15}min；交易轨迹按 1min 策略计算。10x 风险为不利价格波动代理，不等同于 Binance 精确强平价。`;
-    return true;
+  function actionCn(a){return ({OPEN_LONG:"开多",CLOSE_LONG:"平多",OPEN_SHORT:"开空",CLOSE_SHORT:"平空"})[a]||a}
+  async function fetchJson(path){const r=await fetch(path,{cache:"no-store"});if(!r.ok)throw new Error(path+" "+r.status);return r.json()}
+  async function fetchGzip(path){const r=await fetch(path,{cache:"no-store"});if(!r.ok)throw new Error(path+" "+r.status);const raw=await r.arrayBuffer();if(typeof DecompressionStream==="undefined")throw new Error("当前浏览器不支持 gzip 交易回放解压，请使用最新版 Edge / Chrome");const ds=new DecompressionStream("gzip"),stream=new Blob([raw]).stream().pipeThrough(ds);return new Response(stream).arrayBuffer()}
+  function parseMarket1m(buf){const v=new DataView(buf),rows=[];if(v.byteLength<16)return rows;const start=Number(v.getBigInt64(0,true)),count=v.getInt32(8,true);let prevClose=0,o=16;for(let i=0;i<count&&o+16<=v.byteLength;i++,o+=16){const oo=prevClose+v.getInt32(o,true),hh=prevClose+v.getInt32(o+4,true),ll=prevClose+v.getInt32(o+8,true),cc=prevClose+v.getInt32(o+12,true);rows.push([start+i*60000,oo/100,hh/100,ll/100,cc/100]);prevClose=cc}return rows}
+  function parseSignals(buf){const v=new DataView(buf),rows=[];for(let o=0;o+20<=v.byteLength;o+=20)rows.push([v.getFloat64(o,true),v.getFloat32(o+8,true),v.getFloat32(o+12,true),v.getFloat32(o+16,true)]);return rows}
+  function monthsBetween(a,b){const out=[],d=new Date(a+BJ_OFFSET_MS),e=new Date(b+BJ_OFFSET_MS);let y=d.getUTCFullYear(),m=d.getUTCMonth(),ey=e.getUTCFullYear(),em=e.getUTCMonth();while(y<ey||(y===ey&&m<=em)){out.push(`${y}-${String(m+1).padStart(2,"0")}`);m++;if(m===12){m=0;y++}}return out}
+  function fillReplaySelectors(){const alphas=replayIndex.alphas||[];if(!alphas.length){$("#replayNotice").textContent="当前 Run 尚未生成新的固定10%×10x交易回放数据。重新运行现有因子分析后才会出现；不会新增 Alpha。";[replayAlpha,replayMonth,replaySide].forEach(x=>x.disabled=true);return false}
+    replayAlpha.innerHTML=alphas.map(a=>`<option value="${esc(a.alpha_id)}">${esc(a.alpha_id)} · ${esc(directionCn(a.direction_type_train))}</option>`).join("");replayMonth.innerHTML=(replayIndex.months||[]).map(m=>`<option value="${esc(m)}">${esc(m)}（北京时间）</option>`).join("");if(replayIndex.months?.length)replayMonth.value=replayIndex.months[replayIndex.months.length-1];
+    $("#replayNotice").textContent="固定模型：单 Alpha · 10%逐仓保证金 · 10x杠杆 · 同方向不加减仓。信号只用 t-1 及以前信息，交易在 t 分钟 Open 执行。10x强平风险为 High/Low 压力代理，不冒充 Binance 精确强平价。";return true}
+  function renderReplayStats(){const id=replayAlpha.value,d=diagFor(id),f=currentFactorReplay||{};const cards=[["方向类型",directionCn(f.direction_type_train||d.direction_type_train)],["主导方向",sideCn(f.dominant_side_train||d.dominant_side_train)],["Val 固定模型 Sharpe",fmt(lb.find(x=>x.alpha_id===id)?.fixed_val_net_sharpe_daily,2)],["Val BTC Beta",fmt(f.beta?.validation_btc??d.combined_val_beta_btc_daily,3)],["Val ETH Beta",fmt(f.beta?.validation_eth??d.combined_val_beta_eth_daily,3)],["Val Residual Sharpe",fmt(f.beta?.validation_residual_sharpe??d.combined_val_residual_sharpe_daily,2)],["最坏价格 MAE",pct(d.val_risk_worst_price_mae,2)],["最坏10x保证金 MAE",pct(d.val_risk_worst_margin_equity_mae,2)],["最小保证金剩余",pct(d.val_risk_min_margin_remaining_fraction,2)]];$("#replayStats").innerHTML=cards.map(x=>`<div class="replayStat"><div class="rk">${esc(x[0])}</div><div class="rv">${esc(x[1])}</div></div>`).join("")}
+  function renderBetaTable(){const id=replayAlpha.value,rows=betaProfile.filter(x=>x.alpha_id===id&&x.segment==="validation");const cols=["基准","窗口","均值","标准差","P05","P95"];$("#replayBetaTable").innerHTML="<thead><tr>"+cols.map(x=>`<th>${x}</th>`).join("")+"</tr></thead><tbody>"+(rows.length?rows.map(r=>`<tr><td>${esc(r.benchmark)}</td><td>${esc(r.window_minutes)}m</td><td>${fmt(r.mean,3)}</td><td>${fmt(r.std,3)}</td><td>${fmt(r.p05,3)}</td><td>${fmt(r.p95,3)}</td></tr>`).join(""):"<tr><td colspan='6'>当前 Run 尚无 Rolling Beta Profile。</td></tr>")+"</tbody>"}
+  function filteredEpisodes(){if(!currentFactorReplay)return[];const [a,b]=bjMonthBounds(replayMonth.value),side=replaySide.value;return(currentFactorReplay.episodes||[]).filter(e=>e.exit_time_ms>=a&&e.entry_time_ms<b&&(!side||e.side===side))}
+  function filteredEvents(){if(!currentFactorReplay)return[];const side=replaySide.value;return(currentFactorReplay.events||[]).filter(e=>(!viewStartMs||e.timestamp_ms>=viewStartMs)&&(!viewEndMs||e.timestamp_ms<=viewEndMs)&&(!side||(side==="LONG"&&e.action.includes("LONG"))||(side==="SHORT"&&e.action.includes("SHORT"))))}
+  function resetView(){const rows=currentMarket?.rows||[];if(rows.length){viewStartMs=rows[0][0];viewEndMs=rows[rows.length-1][0]+(currentResolution||1)*60000}}
+  function visibleRows(){return(currentMarket?.rows||[]).filter(r=>r[0]>=viewStartMs&&r[0]<=viewEndMs)}
+  function visibleSignals(){return(currentSignals||[]).filter(r=>r[0]>=viewStartMs&&r[0]<=viewEndMs)}
+  function drawTri(ctx,x,y,up,color){ctx.fillStyle=color;ctx.beginPath();if(up){ctx.moveTo(x,y-7);ctx.lineTo(x-5,y+4);ctx.lineTo(x+5,y+4)}else{ctx.moveTo(x,y+7);ctx.lineTo(x-5,y-4);ctx.lineTo(x+5,y-4)}ctx.closePath();ctx.fill()}
+  function drawReplay(cross=null){const canvas=$("#replayCanvas"),ctx=canvas.getContext("2d"),dpr=window.devicePixelRatio||1,w=Math.max(canvas.clientWidth,700),h=620;canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);ctx.fillStyle="#091019";ctx.fillRect(0,0,w,h);const rows=visibleRows();if(!rows.length){ctx.fillStyle="#92a4b8";ctx.fillText("暂无K线数据",20,30);return}
+    const L=62,R=18,T=18,B=30,priceH=390,signalTop=425,signalH=90,posTop=535,posH=55,pw=w-L-R;const tx=t=>L+(t-viewStartMs)/(viewEndMs-viewStartMs||1)*pw;const highs=rows.map(r=>+r[2]),lows=rows.map(r=>+r[3]);let lo=Math.min(...lows),hi=Math.max(...highs),pad=(hi-lo)*.04||1;lo-=pad;hi+=pad;const py=v=>T+(hi-v)/(hi-lo)*priceH;
+    ctx.strokeStyle="#223042";ctx.lineWidth=1;ctx.font="9px system-ui";ctx.fillStyle="#92a4b8";for(let k=0;k<=5;k++){const y=T+k*priceH/5;ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(w-R,y);ctx.stroke();ctx.fillText((hi-k*(hi-lo)/5).toFixed(0),5,y+3)}
+    for(const e of (currentFactorReplay?.episodes||[])){if(e.exit_time_ms<viewStartMs||e.entry_time_ms>viewEndMs)continue;if(replaySide.value&&e.side!==replaySide.value)continue;const x0=Math.max(L,tx(e.entry_time_ms)),x1=Math.min(w-R,tx(e.exit_time_ms));ctx.fillStyle=e.side==="LONG"?"rgba(105,214,151,.10)":"rgba(255,125,134,.10)";ctx.fillRect(x0,T,Math.max(1,x1-x0),priceH)}
+    const cw=Math.max(1,Math.min(6,pw/Math.max(rows.length,1)*.7));for(const r of rows){const x=tx(r[0]),o=+r[1],hh=+r[2],ll=+r[3],c=+r[4],up=c>=o;ctx.strokeStyle=up?"#69d697":"#ff7d86";ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(x,py(hh));ctx.lineTo(x,py(ll));ctx.stroke();const y1=py(Math.max(o,c)),y2=py(Math.min(o,c));ctx.fillRect(x-cw/2,y1,cw,Math.max(1,y2-y1))}
+    for(const e of filteredEvents()){const x=tx(e.timestamp_ms),y=py(+e.execution_price),a=e.action;if(x<L||x>w-R)continue;if(a==="OPEN_LONG")drawTri(ctx,x,y,true,"#69d697");else if(a==="CLOSE_LONG")drawTri(ctx,x,y,false,"#eac85f");else if(a==="OPEN_SHORT")drawTri(ctx,x,y,false,"#ff7d86");else if(a==="CLOSE_SHORT")drawTri(ctx,x,y,true,"#eac85f")}
+    // signal panel: zscore and smoothed target
+    ctx.strokeStyle="#263445";ctx.strokeRect(L,signalTop,pw,signalH);ctx.fillStyle="#92a4b8";ctx.fillText("标准化信号 / 平滑目标",5,signalTop+12);const sig=visibleSignals();const sy=v=>signalTop+signalH/2-Math.max(-3,Math.min(3,v))/3*(signalH*.42);ctx.strokeStyle="#69a7ff";ctx.beginPath();sig.forEach((r,i)=>{const x=tx(r[0]),y=sy(+r[1]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.strokeStyle="#eac85f";ctx.beginPath();sig.forEach((r,i)=>{const x=tx(r[0]),y=sy(+r[2]*3);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.strokeStyle="#405064";ctx.beginPath();ctx.moveTo(L,sy(0));ctx.lineTo(w-R,sy(0));ctx.stroke();
+    // fixed state panel
+    ctx.strokeStyle="#263445";ctx.strokeRect(L,posTop,pw,posH);ctx.fillStyle="#92a4b8";ctx.fillText("固定仓位状态",5,posTop+12);const pY=v=>posTop+posH/2-v*(posH*.34);ctx.strokeStyle="#b8c7d8";ctx.beginPath();sig.forEach((r,i)=>{const x=tx(r[0]),y=pY(+r[3]);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillText("+1 多",L+3,posTop+10);ctx.fillText("0 空仓",L+3,posTop+posH/2+3);ctx.fillText("-1 空",L+3,posTop+posH-4);
+    for(let k=0;k<=4;k++){const t=viewStartMs+k*(viewEndMs-viewStartMs)/4;ctx.fillStyle="#92a4b8";ctx.fillText(bjShort(t),tx(t)-24,h-8)}
+    if(cross&&cross.x>=L&&cross.x<=w-R){ctx.strokeStyle="#718399";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(cross.x,T);ctx.lineTo(cross.x,posTop+posH);ctx.stroke();ctx.setLineDash([])}
   }
+  function nearestRowByTime(rows,t){let best=null,bd=Infinity;for(const r of rows){const d=Math.abs(r[0]-t);if(d<bd){bd=d;best=r}}return best}
+  function canvasMouse(e){if(dragging)return;const c=$("#replayCanvas"),r=c.getBoundingClientRect(),x=e.clientX-r.left,w=r.width,L=62,R=18;if(x<L||x>w-R){$("#replayCrosshairInfo").style.display="none";drawReplay();return}const t=viewStartMs+(x-L)/(w-L-R)*(viewEndMs-viewStartMs),bar=nearestRowByTime(visibleRows(),t),sig=nearestRowByTime(visibleSignals(),t);drawReplay({x});const box=$("#replayCrosshairInfo");box.style.display="block";box.style.left=Math.min(x+12,w-230)+"px";box.style.top="18px";box.innerHTML=`<b>${bjTime(bar?.[0]??t)} 北京时间</b><br>O ${fmt(bar?.[1],2)} · H ${fmt(bar?.[2],2)} · L ${fmt(bar?.[3],2)} · C ${fmt(bar?.[4],2)}<br>z ${fmt(sig?.[1],3)} · 平滑 ${fmt(sig?.[2],3)} · 状态 ${fmt(sig?.[3],0)}`}
+  async function loadMonth(){selectedTrade=null;currentResolution=replayIndex.overview_bar_minutes||15;$("#replayOverview").disabled=true;const id=replayAlpha.value,m=replayMonth.value;const sigPath=`replay/signals/${encodeURIComponent(id)}/${encodeURIComponent(m)}.bin.gz`;const [factor,market,sigBuf]=await Promise.all([fetchJson(`replay/factors/${encodeURIComponent(id)}.json`),fetchJson(`replay/market_${currentResolution}m/${encodeURIComponent(m)}.json`),fetchGzip(sigPath).catch(()=>new ArrayBuffer(0))]);currentFactorReplay=factor;currentMarket=market;currentSignals=parseSignals(sigBuf);resetView();renderReplayStats();renderBetaTable();drawReplay();renderReplayTrades()}
+  async function loadTradeDetail(t){selectedTrade=t;const pad=60*60000,a=t.entry_time_ms-pad,b=t.exit_time_ms+pad,months=monthsBetween(a,b),id=replayAlpha.value;const mBufs=await Promise.all(months.map(m=>fetchGzip(`replay/market_1m/${m}.bin.gz`)));const sBufs=await Promise.all(months.map(m=>fetchGzip(`replay/signals/${encodeURIComponent(id)}/${m}.bin.gz`).catch(()=>new ArrayBuffer(0))));let rows=mBufs.flatMap(parseMarket1m).filter(r=>r[0]>=a&&r[0]<=b),sigs=sBufs.flatMap(parseSignals).filter(r=>r[0]>=a&&r[0]<=b);currentMarket={rows};currentSignals=sigs;currentResolution=1;viewStartMs=a;viewEndMs=b;$("#replayOverview").disabled=false;drawReplay();renderReplayTrades()}
+  function renderReplayTrades(){const eps=filteredEpisodes().sort((a,b)=>a.entry_time_ms-b.entry_time_ms);const cols=["方向","开仓（北京时间）","平仓（北京时间）","持仓(分)","账户净收益","价格MAE","10x保证金MAE","账户MAE","MFE","最小保证金剩余","10x风险"];$("#replayTradesTable").innerHTML="<thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+(eps.length?eps.map((e,i)=>`<tr data-i="${i}" class="${selectedTrade&&selectedTrade.episode_id===e.episode_id?"selected":""}"><td>${sideCn(e.side)}</td><td>${bjTime(e.entry_time_ms)}</td><td>${bjTime(e.exit_time_ms)}</td><td>${e.holding_minutes}</td><td>${pct(e.net_return_on_account,2)}</td><td>${pct(e.price_mae,2)}</td><td>${pct(e.margin_equity_mae,2)}</td><td>${pct(e.account_equity_mae,2)}</td><td>${pct(e.price_mfe,2)}</td><td>${pct(e.min_margin_remaining_fraction,2)}</td><td class="${e.risk_10x==="DANGER"?"riskDanger":e.risk_10x==="WARNING"?"riskWarning":"riskOk"}">${riskText(e.risk_10x)}</td></tr>`).join(""):"<tr><td colspan='11'>本月没有符合筛选条件的持仓区间。</td></tr>")+"</tbody>";document.querySelectorAll("#replayTradesTable tbody tr[data-i]").forEach(tr=>tr.onclick=()=>loadTradeDetail(eps[+tr.dataset.i]).catch(e=>{$("#replayNotice").textContent="1min明细加载失败："+(e.message||e)}))}
+  function zoomCanvas(e){e.preventDefault();const c=e.currentTarget,r=c.getBoundingClientRect(),x=e.clientX-r.left,L=62,R=18;if(x<L||x>r.width-R)return;const center=viewStartMs+(x-L)/(r.width-L-R)*(viewEndMs-viewStartMs),factor=e.deltaY<0?.72:1.38,span=Math.max((currentResolution||1)*60000*20,Math.min((viewEndMs-viewStartMs)*factor,90*24*3600*1000));const frac=(center-viewStartMs)/(viewEndMs-viewStartMs);viewStartMs=center-span*frac;viewEndMs=viewStartMs+span;drawReplay()}
+  function startDrag(e){dragging=true;dragX=e.clientX;dragStartA=viewStartMs;dragStartB=viewEndMs;e.currentTarget.style.cursor="grabbing"}
+  function moveDrag(e){if(!dragging){canvasMouse(e);return}const c=e.currentTarget,r=c.getBoundingClientRect(),span=dragStartB-dragStartA,dt=-(e.clientX-dragX)/(r.width-80)*span;viewStartMs=dragStartA+dt;viewEndMs=dragStartB+dt;drawReplay()}
+  function endDrag(e){dragging=false;e.currentTarget.style.cursor="crosshair"}
+  if(fillReplaySelectors()){const c=$("#replayCanvas");replayAlpha.addEventListener("change",()=>loadMonth().catch(e=>{$("#replayNotice").textContent="回放加载失败："+(e.message||e)}));replayMonth.addEventListener("change",()=>loadMonth().catch(e=>{$("#replayNotice").textContent="回放加载失败："+(e.message||e)}));replaySide.addEventListener("change",()=>{drawReplay();renderReplayTrades()});$("#replayPrev").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>0){replayMonth.value=a[i-1];loadMonth()}};$("#replayNext").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>=0&&i<a.length-1){replayMonth.value=a[i+1];loadMonth()}};$("#replayOverview").onclick=()=>loadMonth();c.addEventListener("wheel",zoomCanvas,{passive:false});c.addEventListener("mousedown",startDrag);c.addEventListener("mousemove",moveDrag);window.addEventListener("mouseup",endDrag);c.addEventListener("mouseleave",e=>{if(!dragging){$("#replayCrosshairInfo").style.display="none";drawReplay()}});window.addEventListener("resize",()=>drawReplay());loadMonth().catch(e=>{$("#replayNotice").textContent="回放加载失败："+(e.message||e)})}
 
-  async function fetchJson(path){
-    const r=await fetch(path,{cache:"no-store"});
-    if(!r.ok) throw new Error(path+" "+r.status);
-    return r.json();
-  }
-
-  function renderReplayStats(){
-    const id=replayAlpha.value,d=diagFor(id),f=currentFactorReplay||{};
-    const cards=[
-      ["方向类型",directionCn(f.direction_type_train||d.direction_type_train)],
-      ["主导方向",sideCn(f.dominant_side_train||d.dominant_side_train)],
-      ["Val BTC Beta",fmt(f.beta?.validation_btc??d.combined_val_beta_btc_daily,3)],
-      ["Val ETH Beta",fmt(f.beta?.validation_eth??d.combined_val_beta_eth_daily,3)],
-      ["Val Residual Sharpe",fmt(f.beta?.validation_residual_sharpe??d.combined_val_residual_sharpe_daily,2)],
-      ["Val 多头 Sharpe",fmt(d.long_val_net_sharpe_daily,2)],
-      ["Val 空头 Sharpe",fmt(d.short_val_net_sharpe_daily,2)]
-    ];
-    $("#replayStats").innerHTML=cards.map(x=>`<div class="replayStat"><div class="rk">${esc(x[0])}</div><div class="rv">${esc(x[1])}</div></div>`).join("");
-  }
-
-  function monthBounds(month){
-    const [y,m]=month.split("-").map(Number);
-    const start=Date.UTC(y,m-1,1),end=Date.UTC(y,m,1);
-    return [start,end];
-  }
-
-  function filteredEpisodes(){
-    if(!currentFactorReplay)return[];
-    const [start,end]=monthBounds(replayMonth.value),side=replaySide.value;
-    return (currentFactorReplay.episodes||[]).filter(e=>e.exit_time_ms>=start&&e.entry_time_ms<end&&(!side||e.side===side));
-  }
-  function filteredEvents(){
-    if(!currentFactorReplay)return[];
-    const [start,end]=monthBounds(replayMonth.value),side=replaySide.value;
-    return (currentFactorReplay.events||[]).filter(e=>{
-      if(e.timestamp_ms<start||e.timestamp_ms>=end)return false;
-      if(!side)return true;
-      const np=Number(e.new_position),pp=Number(e.prev_position);
-      return side==="LONG"?(np>0||pp>0):(np<0||pp<0);
-    });
-  }
-
-  function drawTriangle(ctx,x,y,up,color){
-    ctx.fillStyle=color;ctx.beginPath();
-    if(up){ctx.moveTo(x,y-6);ctx.lineTo(x-5,y+4);ctx.lineTo(x+5,y+4)}
-    else{ctx.moveTo(x,y+6);ctx.lineTo(x-5,y-4);ctx.lineTo(x+5,y-4)}
-    ctx.closePath();ctx.fill();
-  }
-
-  function drawReplay(){
-    const canvas=$("#replayCanvas"),ctx=canvas.getContext("2d");
-    const dpr=window.devicePixelRatio||1,w=Math.max(canvas.clientWidth,700),h=430;
-    canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);ctx.fillStyle="#091019";ctx.fillRect(0,0,w,h);
-    const rows=currentMarket?.rows||[];
-    if(!rows.length){ctx.fillStyle="#92a4b8";ctx.fillText("暂无 K 线数据",20,30);return}
-
-    const P={l:62,r:18,t:18,b:34},pw=w-P.l-P.r,ph=h-P.t-P.b;
-    const lows=rows.map(r=>Number(r[3])),highs=rows.map(r=>Number(r[2]));
-    let lo=Math.min(...lows),hi=Math.max(...highs);const pad=(hi-lo)*.04||1;lo-=pad;hi+=pad;
-    const X=i=>P.l+(i+.5)/rows.length*pw,Y=v=>P.t+(hi-v)/(hi-lo)*ph;
-    const tx=t=>{
-      const t0=Number(rows[0][0]),t1=Number(rows[rows.length-1][0]);
-      return P.l+(t-t0)/(t1-t0||1)*pw;
-    };
-
-    // Grid
-    ctx.strokeStyle="#223042";ctx.lineWidth=1;ctx.font="9px system-ui";ctx.fillStyle="#92a4b8";
-    for(let k=0;k<=5;k++){const y=P.t+k*ph/5;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(w-P.r,y);ctx.stroke();const v=hi-k*(hi-lo)/5;ctx.fillText(v.toFixed(0),5,y+3)}
-
-    // Holding intervals
-    for(const e of filteredEpisodes()){
-      const x0=Math.max(P.l,tx(e.entry_time_ms)),x1=Math.min(w-P.r,tx(e.exit_time_ms));
-      ctx.fillStyle=e.side==="LONG"?"rgba(105,214,151,.11)":"rgba(255,125,134,.11)";
-      ctx.fillRect(x0,P.t,Math.max(1,x1-x0),ph);
-    }
-
-    // Candles
-    const cw=Math.max(1,Math.min(5,pw/rows.length*.7));
-    rows.forEach((r,i)=>{
-      const o=+r[1],hh=+r[2],ll=+r[3],c=+r[4],x=X(i),up=c>=o;
-      ctx.strokeStyle=up?"#69d697":"#ff7d86";ctx.fillStyle=ctx.strokeStyle;
-      ctx.beginPath();ctx.moveTo(x,Y(hh));ctx.lineTo(x,Y(ll));ctx.stroke();
-      const y1=Y(Math.max(o,c)),y2=Y(Math.min(o,c));ctx.fillRect(x-cw/2,y1,cw,Math.max(1,y2-y1));
-    });
-
-    // Major trade markers; add/reduce are small dots.
-    for(const e of filteredEvents()){
-      const x=tx(e.timestamp_ms),y=Y(Number(e.price)),a=e.action;
-      if(x<P.l||x>w-P.r)continue;
-      if(a==="OPEN_LONG"||a==="FLIP_TO_LONG")drawTriangle(ctx,x,y,true,"#69d697");
-      else if(a==="CLOSE_LONG")drawTriangle(ctx,x,y,false,"#eac85f");
-      else if(a==="OPEN_SHORT"||a==="FLIP_TO_SHORT")drawTriangle(ctx,x,y,false,"#ff7d86");
-      else if(a==="CLOSE_SHORT")drawTriangle(ctx,x,y,true,"#eac85f");
-      else{ctx.fillStyle="#7aaaff";ctx.beginPath();ctx.arc(x,y,2.2,0,Math.PI*2);ctx.fill()}
-    }
-
-    // Month labels
-    ctx.fillStyle="#92a4b8";ctx.font="9px system-ui";
-    for(let k=0;k<=4;k++){const i=Math.min(rows.length-1,Math.floor(k*(rows.length-1)/4));const dt=new Date(rows[i][0]);ctx.fillText(`${dt.getUTCMonth()+1}/${dt.getUTCDate()}`,X(i)-12,h-10)}
-  }
-
-  function renderReplayTrades(){
-    const eps=filteredEpisodes().sort((a,b)=>a.entry_time_ms-b.entry_time_ms);
-    const cols=["方向","开仓","平仓","持仓(分)","净收益","MAE","MFE","持仓内最大回撤","10x风险"];
-    $("#replayTradesTable").innerHTML="<thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+
-      (eps.length?eps.map(e=>`<tr><td>${sideCn(e.side)}</td><td>${esc(e.entry_time)}</td><td>${esc(e.exit_time)}</td><td>${esc(e.holding_minutes)}</td><td>${pct(e.net_return,2)}</td><td>${pct(e.mae,2)}</td><td>${pct(e.mfe,2)}</td><td>${pct(e.holding_max_drawdown,2)}</td><td><span class="pill ${e.risk_10x==="OK"?"pass":"research"}">${riskText(e.risk_10x)}</span></td></tr>`).join(""):"<tr><td colspan='9'>本月没有符合筛选条件的持仓区间。</td></tr>")+"</tbody>";
-  }
-
-  async function loadReplay(){
-    if(!replayIndex.alphas?.length)return;
-    try{
-      const id=replayAlpha.value,month=replayMonth.value,bar=replayIndex.bar_minutes||15;
-      [currentFactorReplay,currentMarket]=await Promise.all([
-        fetchJson(`replay/factors/${encodeURIComponent(id)}.json`),
-        fetchJson(`replay/market_${bar}m/${encodeURIComponent(month)}.json`)
-      ]);
-      renderReplayStats();drawReplay();renderReplayTrades();
-    }catch(e){
-      $("#replayNotice").textContent="回放数据加载失败："+String(e.message||e);
-    }
-  }
-
-  if(fillReplaySelectors()){
-    replayAlpha.addEventListener("change",loadReplay);replayMonth.addEventListener("change",loadReplay);replaySide.addEventListener("change",()=>{drawReplay();renderReplayTrades()});
-    $("#replayPrev").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>0){replayMonth.value=a[i-1];loadReplay()}};
-    $("#replayNext").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>=0&&i<a.length-1){replayMonth.value=a[i+1];loadReplay()}};
-    window.addEventListener("resize",()=>{if(currentMarket)drawReplay()});
-    loadReplay();
-  }
-
-  $("#footer").textContent=`正式结果策略：${D.officialPolicy} · 页面由 GitHub 构建 · ${state.updated_at_utc||manifest.created_at_utc||""}`;
+  $("#footer").textContent=`正式结果策略：${D.officialPolicy} · 页面由 GitHub 自动构建 · 更新时间（北京时间）：${bjTime(state.updated_at_utc||manifest.created_at_utc||pkg.created_at_utc)}`;
 })().catch(err=>{
   document.body.innerHTML=`<pre style="padding:30px;color:#ff7d86;background:#080c12">Dashboard 加载失败：\n${String(err.stack||err)}</pre>`;
 });
