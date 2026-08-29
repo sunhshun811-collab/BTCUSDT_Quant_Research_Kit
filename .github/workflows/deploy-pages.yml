@@ -1,42 +1,33 @@
 name: Build and deploy research dashboard
-
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: "pages"
   cancel-in-progress: true
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout research archive
         uses: actions/checkout@v4
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Build official site
+      - name: Build Dashboard and ChatGPT analysis ZIP
         run: python site/build_site.py --repo-root . --output-dir _site
-
       - name: Configure Pages
         uses: actions/configure-pages@v5
-
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-
   deploy:
     environment:
       name: github-pages

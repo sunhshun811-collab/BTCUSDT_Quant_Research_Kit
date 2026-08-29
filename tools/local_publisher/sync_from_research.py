@@ -2,7 +2,7 @@
 from __future__ import annotations
 from pathlib import Path
 from datetime import datetime, timezone
-import argparse, csv, hashlib, json, shutil, zipfile
+import argparse, csv, hashlib, json, shutil
 
 EXCLUDE_SRC = {
     "phase1_report.py",
@@ -233,42 +233,11 @@ def append_run_if_changed(repo_root:Path,manifest:dict,lb:list,force=False):
     state_path.write_text(json.dumps(state,indent=2,ensure_ascii=False),encoding="utf-8")
     return changed,run_id
 
-def build_handoff(repo_root:Path,output:Path):
-    output.parent.mkdir(parents=True,exist_ok=True)
-    tmp=output.with_suffix(output.suffix+".tmp")
-    if tmp.exists():tmp.unlink()
-    allowed=[repo_root/"research",repo_root/"official"/"latest"]
-    state=read_json(repo_root/"official"/"state.json",{})
-    run_id=state.get("latest_run_id")
-    if run_id:
-        allowed += [repo_root/"runs"/run_id/"manifest.json",repo_root/"runs"/run_id/"research_summary.md"]
-    allowed += [repo_root/"runs"/"index.json",repo_root/"official"/"state.json"]
-
-    manifest={"schema_version":4,"official_result_policy":"PHASE2_ONLY","latest_run_id":run_id,"raw_market_data_included":False,"visualization_code_included":False,"files":[]}
-    with zipfile.ZipFile(tmp,"w",zipfile.ZIP_DEFLATED,compresslevel=6) as z:
-        for item in allowed:
-            if item.is_dir():
-                for p in sorted(x for x in item.rglob("*") if x.is_file()):
-                    rel=p.relative_to(repo_root).as_posix()
-                    z.write(p,rel)
-                    manifest["files"].append(rel)
-            elif item.exists():
-                rel=item.relative_to(repo_root).as_posix()
-                z.write(item,rel)
-                manifest["files"].append(rel)
-        z.writestr("PACKAGE_MANIFEST.json",json.dumps(manifest,indent=2,ensure_ascii=False))
-        z.writestr("READ_ME_FIRST.txt","Official Phase2 handoff. Contains research code and compact results only. No raw market data and no visualization code. Upload directly to ChatGPT.\n")
-    if output.exists():output.unlink()
-    tmp.replace(output)
-    return output
-
-def main(repo_root:Path,research_root:Path,package_output:Path|None,force_run=False):
+def main(repo_root:Path,research_root:Path,force_run=False):
     copy_research_code(research_root,repo_root)
     latest=copy_official_results(research_root,repo_root)
     manifest,lb=make_manifest(repo_root,latest)
     changed,run_id=append_run_if_changed(repo_root,manifest,lb,force=force_run)
-    if package_output:
-        build_handoff(repo_root,package_output)
     print("Official Phase2 synced.")
     print("New official run:",changed)
     print("Run ID:",run_id)
@@ -279,7 +248,6 @@ if __name__=="__main__":
     ap=argparse.ArgumentParser()
     ap.add_argument("--repo-root",required=True)
     ap.add_argument("--research-root",required=True)
-    ap.add_argument("--package-output")
     ap.add_argument("--force-run",action="store_true")
     a=ap.parse_args()
-    main(Path(a.repo_root).resolve(),Path(a.research_root).resolve(),Path(a.package_output).resolve() if a.package_output else None,a.force_run)
+    main(Path(a.repo_root).resolve(),Path(a.research_root).resolve(),a.force_run)

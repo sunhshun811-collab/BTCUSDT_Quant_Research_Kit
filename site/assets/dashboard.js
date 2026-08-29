@@ -1,4 +1,4 @@
-﻿(async function(){
+(async function(){
   const D=await fetch("site-data.json",{cache:"no-store"}).then(r=>{
     if(!r.ok) throw new Error("site-data.json "+r.status);
     return r.json();
@@ -23,6 +23,7 @@
   const median=a=>{const x=a.map(num).filter(v=>v!=null).sort((a,b)=>a-b);if(!x.length)return null;const m=Math.floor(x.length/2);return x.length%2?x[m]:(x[m-1]+x[m])/2};
   const retVals=lb.map(r=>num(r.val_net_return)).filter(v=>v!=null);
   const grossVals=lb.map(r=>num(r.val_gross_bps_per_unit_turnover)).filter(v=>v!=null);
+  const pkg=D.packageInfo||{};
 
   $("#status").innerHTML=[
     ["正式阶段",state.phase||"PHASE2_LOW_TURNOVER"],
@@ -37,11 +38,24 @@
     ["Alpha 数量",lb.length,"正式 Phase2"],
     ["候选数量",candidates,"通过筛选"],
     ["最佳验证 Sharpe",fmt(best.val_net_sharpe_daily),"已扣除配置成本"],
-    ["最佳验证收益",retVals.length?pct(Math.max(...retVals)):"—","Validation"],
-    ["年化换手中位数",fmt(median(lb.map(r=>r.val_annualized_turnover)),1),"Validation"],
+    ["最佳验证收益",retVals.length?pct(Math.max(...retVals)):"—","验证集"],
+    ["年化换手中位数",fmt(median(lb.map(r=>r.val_annualized_turnover)),1),"验证集"],
     ["最佳每换手毛收益",grossVals.length?fmt(Math.max(...grossVals),2):"—","执行效率"]
   ];
   $("#cards").innerHTML=cards.map(x=>`<div class="panel card"><div class="k">${esc(x[0])}</div><div class="v">${esc(x[1])}</div><div class="hint">${esc(x[2])}</div></div>`).join("");
+
+  const pkgVersion=encodeURIComponent(pkg.sha256||state.content_hash||manifest.content_hash||"latest");
+  const pkgHref=`downloads/research_package_latest.zip?v=${pkgVersion}`;
+  ["analysisPackageTop","analysisPackageBottom"].forEach(id=>{
+    const a=$("#"+id);
+    if(a){a.href=pkgHref;}
+  });
+  const pkgSize=pkg.size_mb!=null?`${fmt(pkg.size_mb,2)} MB`:"—";
+  const pkgFiles=pkg.file_count!=null?`${pkg.file_count} 个文件`:"—";
+  const pkgRun=pkg.latest_run_id||state.latest_run_id||manifest.run_id||"—";
+  if($("#analysisPackageMeta")) $("#analysisPackageMeta").textContent=`最新 Run：${pkgRun} · ${pkgSize}`;
+  if($("#analysisPackageDetail")) $("#analysisPackageDetail").textContent=`最新 Run：${pkgRun} · ${pkgSize} · ${pkgFiles} · SHA256 ${String(pkg.sha256||"—").slice(0,16)}…`;
+
 
   const columns=[
     ["alpha_id","Alpha"],["family","Family"],["hypothesis","研究假设"],
@@ -178,4 +192,3 @@
 })().catch(err=>{
   document.body.innerHTML=`<pre style="padding:30px;color:#ff7d86;background:#080c12">Dashboard 加载失败：\n${String(err.stack||err)}</pre>`;
 });
-
