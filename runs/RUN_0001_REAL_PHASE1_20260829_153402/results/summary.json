@@ -1,0 +1,18 @@
+{
+  "status": "REAL_PHASE1_TRAIN_VALIDATION_ONLY",
+  "test_locked": true,
+  "test_start": "2024-10-19 14:24:00+00:00",
+  "rows_visible": 2525184,
+  "alphas_researched": 18,
+  "phase1_candidates": 0,
+  "families": [
+    "Beta / Residual",
+    "Carry / Funding",
+    "Liquidity / Microstructure",
+    "Mean Reversion",
+    "Momentum / Trend",
+    "Order Flow",
+    "Relative Value",
+    "Volatility"
+  ]
+}

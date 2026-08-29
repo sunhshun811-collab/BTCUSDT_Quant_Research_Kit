@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "run_id": "RUN_0001_REAL_PHASE1_20260829_153402",
+      "run_number": 1,
+      "phase": "REAL_PHASE1",
+      "created_at_utc": "2026-08-29T15:34:02.586889+00:00",
+      "path": "runs/RUN_0001_REAL_PHASE1_20260829_153402",
+      "alphas_researched": 18,
+      "phase1_candidates": 0,
+      "test_locked": true,
+      "source_git_commit": "b10e0a8cd6eb4dabb9de17030e5e1861f11f6b18"
+    }
+  ]
+}
