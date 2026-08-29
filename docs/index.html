@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BTCUSDT Quant Research Dashboard</title>
+<style>
+:root{--bg:#0b0f14;--panel:#111820;--panel2:#151e28;--text:#e8eef5;--muted:#8fa1b3;--line:#253241;--good:#5fd38d;--warn:#ffcf5c;--accent:#69a7ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Arial}
+.wrap{max-width:1420px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}
+h1{margin:0 0 6px;font-size:28px}.sub{color:var(--muted);font-size:14px}.badge{padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.demo{background:#3b2f11;color:var(--warn);border:1px solid #705b1c}.locked{background:#142d21;color:var(--good);border:1px solid #285b40}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.v{font-size:24px;margin-top:5px;font-weight:700}
+section{margin-top:16px}.section-title{font-size:15px;font-weight:700;margin:0 0 10px}
+.split{display:grid;grid-template-columns:3fr 1fr 1fr;gap:3px}.seg{padding:12px;border-radius:8px;background:var(--panel2);font-size:13px}.seg b{display:block;margin-bottom:3px}
+.chart{height:260px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+canvas{width:100%;height:220px}.tablebox{overflow:auto;border:1px solid var(--line);border-radius:12px}
+table{width:100%;border-collapse:collapse;background:var(--panel);min-width:800px}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:right;font-size:13px}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}th{color:var(--muted);font-weight:600;background:#0f161e}
+.note{padding:14px;border-left:3px solid var(--warn);background:#17150d;color:#e7d998;border-radius:8px;font-size:13px;line-height:1.6}
+.family-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.family{background:var(--panel);border:1px solid var(--line);padding:13px;border-radius:10px}.family b{display:block;margin-bottom:5px}.family span{color:var(--muted);font-size:12px}
+footer{color:var(--muted);font-size:12px;margin:24px 0 10px}
+@media(max-width:900px){.grid,.family-grid{grid-template-columns:1fr 1fr}.top{display:block}.split{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<div class="top">
+<div><h1>BTCUSDT Quant Research Dashboard</h1><div class="sub">Binance USD-M Perpetual · 1 minute · 2020-01-01 → 2026-01-01</div></div>
+<div><span class="badge demo">FRAMEWORK DEMO</span> <span class="badge locked">TEST LOCKED</span></div>
+</div>
+<div class="note"><b>重要：</b>当前收益、Sharpe、IC 和回撤均为框架验证用的 DEMO 数据，不是 BTCUSDT 真实历史回测结果。真实数据接入后将替换此区域。</div>
+
+<section><div class="grid">
+<div class="card"><div class="k">Research Families</div><div class="v">8</div></div>
+<div class="card"><div class="k">Demo Alphas</div><div class="v">8</div></div>
+<div class="card"><div class="k">Bar Interval</div><div class="v">1m</div></div>
+<div class="card"><div class="k">Test Status</div><div class="v" style="color:var(--good)">LOCKED</div></div>
+</div></section>
+
+<section>
+<div class="section-title">Strict chronological 6:2:2 split</div>
+<div class="split">
+<div class="seg"><b>TRAIN · 60%</b>2020-01-01 00:00 UTC → 2023-08-08 04:48 UTC</div>
+<div class="seg"><b>VALIDATION · 20%</b>2023-08-08 04:48 UTC → 2024-10-19 14:24 UTC</div>
+<div class="seg"><b>TEST · 20%</b>2024-10-19 14:24 UTC → 2026-01-01 00:00 UTC</div>
+</div>
+</section>
+
+<section><div class="section-title">Demo equity curve · pipeline verification only</div><div class="chart"><canvas id="eq"></canvas></div></section>
+
+<section>
+<div class="section-title">Alpha leaderboard · DEMO</div>
+<div class="tablebox"><table>
+<thead><tr><th>Alpha ID</th><th>Family</th><th>Net Sharpe</th><th>IC</th><th>Rank IC</th><th>MDD</th><th>Turnover/bar</th><th>Status</th></tr></thead>
+<tbody>
+        <tr>
+          <td>DEMO_MOM_001</td>
+          <td>Momentum</td>
+          <td>0.58</td>
+          <td>0.0050</td>
+          <td>0.0025</td>
+          <td>-8.46%</td>
+          <td>0.0085</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_MR_001</td>
+          <td>Mean Reversion</td>
+          <td>0.78</td>
+          <td>0.0041</td>
+          <td>0.0042</td>
+          <td>-9.25%</td>
+          <td>0.0156</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_OF_001</td>
+          <td>Order Flow</td>
+          <td>1.04</td>
+          <td>0.0048</td>
+          <td>0.0086</td>
+          <td>-9.86%</td>
+          <td>0.0175</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_VOL_001</td>
+          <td>Volatility</td>
+          <td>1.07</td>
+          <td>0.0096</td>
+          <td>0.0100</td>
+          <td>-10.12%</td>
+          <td>0.0214</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_CARRY_001</td>
+          <td>Carry / Funding</td>
+          <td>1.35</td>
+          <td>0.0111</td>
+          <td>0.0115</td>
+          <td>-11.30%</td>
+          <td>0.0276</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_LIQ_001</td>
+          <td>Liquidity</td>
+          <td>1.43</td>
+          <td>0.0108</td>
+          <td>0.0108</td>
+          <td>-14.45%</td>
+          <td>0.0285</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_OI_001</td>
+          <td>OI / Positioning</td>
+          <td>1.52</td>
+          <td>0.0114</td>
+          <td>0.0145</td>
+          <td>-14.09%</td>
+          <td>0.0347</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr>
+        <tr>
+          <td>DEMO_RV_001</td>
+          <td>Relative Value</td>
+          <td>1.83</td>
+          <td>0.0139</td>
+          <td>0.0130</td>
+          <td>-15.57%</td>
+          <td>0.0368</td>
+          <td><span class="badge demo">DEMO</span></td>
+        </tr></tbody>
+</table></div>
+</section>
+
+<section>
+<div class="section-title">Research family map</div>
+<div class="family-grid">
+<div class="family"><b>Momentum / Trend</b><span>multi-horizon return, breakout, trend persistence</span></div>
+<div class="family"><b>Mean Reversion</b><span>z-score, VWAP deviation, short-term reversal</span></div>
+<div class="family"><b>Order Flow</b><span>taker imbalance, trade intensity, signed volume proxy</span></div>
+<div class="family"><b>Volatility</b><span>realized vol, range, vol-of-vol, expansion/compression</span></div>
+<div class="family"><b>Carry / Funding</b><span>funding, premium, mark-index basis</span></div>
+<div class="family"><b>Liquidity</b><span>volume shock, impact proxy, average trade size</span></div>
+<div class="family"><b>OI / Positioning</b><span>OI change, crowding, OI × return/funding</span></div>
+<div class="family"><b>Relative Value</b><span>perp-spot, BTC-ETH residual, beta-neutral residual</span></div>
+</div>
+</section>
+
+<footer>Generated: 2026-08-29 13:32 UTC · v1 framework · No test-set optimization permitted.</footer>
+</div>
+<script>
+const data=[1.000000,1.002908,1.001484,0.996580,0.993390,0.996508,1.002288,1.001282,1.003759,1.009035,1.009728,1.010980,1.013359,1.015761,1.018891,1.018749,1.024163,1.026104,1.026730,1.032867,1.032512,1.034883,1.033053,1.031118,1.028378,1.030104,1.028358,1.028650,1.031049,1.034301,1.034151,1.040075,1.043494,1.043202,1.044933,1.044370,1.048685,1.048265,1.049986,1.053995,1.054002,1.054228,1.049795,1.050114,1.054402,1.058855,1.059040,1.061548,1.063176,1.060809,1.063452,1.065621,1.070043,1.074200,1.070841,1.068262,1.063035,1.065377,1.063555,1.062999,1.065017,1.064706,1.061108,1.061150,1.055875,1.055364,1.057136,1.053657,1.058486,1.062398,1.061812,1.058201,1.055365,1.051433,1.052095,1.049675,1.050096,1.047124,1.044561,1.041978,1.036187,1.034195,1.036011,1.033143,1.031901,1.031921,1.036574,1.034603,1.030983,1.031726,1.029201,1.029849,1.030112,1.025604,1.023095,1.022076,1.019854,1.018841,1.017169,1.014549,1.015215,1.016465,1.016703,1.013328,1.010736,1.011217,1.013876,1.010544,1.008539,1.010152,1.007966,1.009578,1.009280,1.008764,1.011360,1.012864,1.011959,1.011490,1.009443,1.011976,1.012612,1.016376,1.018888,1.020160,1.019047,1.023136,1.029650,1.032508,1.031548,1.029083,1.033993,1.036714,1.041832,1.044292,1.045916,1.049267,1.052032,1.054812,1.057289,1.057910,1.060621,1.060434,1.062017,1.065048,1.065497,1.068689,1.068925,1.064437,1.064079,1.065268,1.069073,1.074417,1.077922,1.080591,1.082936,1.079627,1.081286,1.084012,1.082305,1.083096,1.085523,1.088869,1.090478,1.091650,1.087342,1.087907,1.090058,1.086090,1.086886,1.083965,1.085871,1.085244,1.085494,1.084213,1.082395,1.081279,1.078873,1.079742,1.079133,1.078301,1.075719,1.072175,1.069076,1.070933,1.070438,1.066859,1.066810,1.067039,1.065450,1.068771,1.072517,1.077293,1.075041,1.072964,1.074676,1.073415,1.074214,1.072558,1.070619,1.070623,1.076474,1.075813,1.074743,1.072233,1.070034,1.072324,1.066457,1.067922,1.068821,1.071585,1.069912,1.073249,1.076936,1.073848,1.074790,1.075443,1.076619,1.075808,1.077228,1.076091,1.074917,1.076721,1.072511,1.074079,1.073631,1.075078,1.076225,1.076721,1.078032,1.076121,1.076297,1.079982,1.080778,1.081217,1.081153,1.081477,1.084465,1.088111,1.089914,1.087674,1.090386];
+const c=document.getElementById('eq'),ctx=c.getContext('2d');
+function draw(){
+ const dpr=window.devicePixelRatio||1,rect=c.getBoundingClientRect();
+ c.width=rect.width*dpr;c.height=rect.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+ const w=rect.width,h=rect.height,p=22;
+ ctx.clearRect(0,0,w,h);ctx.strokeStyle='#253241';ctx.lineWidth=1;
+ for(let i=0;i<5;i++){let y=p+(h-2*p)*i/4;ctx.beginPath();ctx.moveTo(p,y);ctx.lineTo(w-p,y);ctx.stroke()}
+ let mn=Math.min(...data),mx=Math.max(...data),rng=mx-mn||1;
+ ctx.strokeStyle='#69a7ff';ctx.lineWidth=2;ctx.beginPath();
+ data.forEach((v,i)=>{let x=p+(w-2*p)*i/(data.length-1);let y=h-p-(h-2*p)*(v-mn)/rng;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+ ctx.stroke();
+}
+draw();window.addEventListener('resize',draw);
+</script>
+</body></html>

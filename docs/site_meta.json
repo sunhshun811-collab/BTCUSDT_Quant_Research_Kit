@@ -1,0 +1,8 @@
+{
+  "site_type": "static_quant_research_dashboard",
+  "entry": "docs/index.html",
+  "deployment": "github_pages_actions",
+  "branch": "main",
+  "test_locked": true,
+  "status": "demo_framework"
+}

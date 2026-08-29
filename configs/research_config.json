@@ -1,0 +1,37 @@
+{
+  "symbol": "BTCUSDT",
+  "market": "Binance USD-M Perpetual",
+  "bar_interval": "1m",
+  "research_window": {
+    "start_utc": "2020-01-01T00:00:00Z",
+    "end_exclusive_utc": "2026-01-01T00:00:00Z"
+  },
+  "time_split": {
+    "method": "strict_chronological_60_20_20",
+    "train": [
+      "2020-01-01T00:00:00Z",
+      "2023-08-08T04:48:00Z"
+    ],
+    "validation": [
+      "2023-08-08T04:48:00Z",
+      "2024-10-19T14:24:00Z"
+    ],
+    "test": [
+      "2024-10-19T14:24:00Z",
+      "2026-01-01T00:00:00Z"
+    ],
+    "test_locked": true
+  },
+  "costs": {
+    "taker_fee_bps_one_way": 5.0,
+    "slippage_bps_one_way": 1.0,
+    "funding": "use_actual_column_when_available"
+  },
+  "research_rules": {
+    "signal_delay_bars": 1,
+    "allow_random_split": false,
+    "allow_test_optimization": false,
+    "require_economic_hypothesis": true,
+    "deduplicate_by_logic_and_correlation": true
+  }
+}
