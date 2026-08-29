@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "purpose": "Machine-readable mirror of compact BTCUSDT research artifacts.",
+  "latest_run_id": "RUN_0001_REAL_PHASE1_20260829_153402",
+  "latest": {
+    "research_state": "api/latest/research_state.json",
+    "manifest": "api/latest/manifest.json",
+    "summary": "api/latest/research_summary.md",
+    "leaderboard": "api/latest/alpha_leaderboard.csv",
+    "data_quality": "api/latest/data_quality.json"
+  },
+  "runs_index": "api/runs/index.json",
+  "mirrored_run_count": 1,
+  "raw_market_data_published": false
+}
