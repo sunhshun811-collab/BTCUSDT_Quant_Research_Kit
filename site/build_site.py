@@ -45,7 +45,10 @@ def package_files(repo: Path):
         if item.is_dir():
             for p in item.rglob("*"):
                 if p.is_file() and "__pycache__" not in p.parts and p.suffix.lower() not in {".pyc",".zip",".parquet"}:
-                    found[p.relative_to(repo).as_posix()]=p
+                    rel=p.relative_to(repo).as_posix()
+                    if rel.startswith("official/latest/replay/"):
+                        continue
+                    found[rel]=p
         elif item.is_file():
             found[item.relative_to(repo).as_posix()]=item
     return [found[k] for k in sorted(found)],state
@@ -89,6 +92,8 @@ def main(repo: Path,out: Path):
              "leaderboard":csv_records(latest/"alpha_leaderboard.csv"),
              "costSensitivity":csv_records(latest/"cost_sensitivity.csv"),
              "yearly":csv_records(latest/"yearly_metrics.csv"),
+             "factorDiagnostics":csv_records(latest/"factor_diagnostics.csv"),
+             "replayIndex":read_json(latest/"replay_index.json",{}),
              "runs":read_json(repo/"runs"/"index.json",{"runs":[]}).get("runs",[]),
              "repoUrl":"https://github.com/sunhshun811-collab/BTCUSDT_Quant_Research_Kit",
              "packageInfo":package_info}
@@ -96,6 +101,10 @@ def main(repo: Path,out: Path):
     shutil.copy2(repo/"site"/"template.html",out/"index.html")
     shutil.copytree(repo/"site"/"assets",out/"assets")
     (out/"site-data.json").write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
+
+    replay_src=latest/"replay"
+    if replay_src.exists():
+        shutil.copytree(replay_src,out/"replay")
 
     dl=out/"data"/"latest";dl.mkdir(parents=True,exist_ok=True)
     for p in latest.iterdir():

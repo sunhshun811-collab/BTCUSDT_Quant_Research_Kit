@@ -188,6 +188,168 @@
   const rcols=[["run_id","Run"],["phase","阶段"],["created_at_utc","UTC 时间"],["alphas_researched","Alpha 数"],["candidate_count","候选数"],["test_locked","测试集锁定"]];
   $("#runsTable").innerHTML="<thead><tr>"+rcols.map(x=>`<th>${x[1]}</th>`).join("")+"</tr></thead><tbody>"+(runs.length?runs.map(r=>"<tr>"+rcols.map(([k])=>`<td>${k==="test_locked"?(yes(r[k])?"是":"否"):esc(r[k]??"—")}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${rcols.length}" style="text-align:left;color:#92a4b8">当前仅有一个正式 Phase2 基线；后续运行会自动追加。</td></tr>`)+"</tbody>";
 
+
+  // ---- Existing-factor trade replay / Beta / 10x risk ----
+  const fdiag=[...(D.factorDiagnostics||[])];
+  const replayIndex=D.replayIndex||{};
+  const replayAlpha=$("#replayAlpha"), replayMonth=$("#replayMonth"), replaySide=$("#replaySide");
+  let currentFactorReplay=null,currentMarket=null;
+
+  function diagFor(id){return fdiag.find(x=>String(x.alpha_id)===String(id))||{}}
+  function riskText(v){const x=String(v||"");return x==="DANGER"?"危险":x==="WARNING"?"警告":x==="OK"?"正常":x||"—"}
+  function actionCn(a){return ({
+    OPEN_LONG:"开多",CLOSE_LONG:"平多",OPEN_SHORT:"开空",CLOSE_SHORT:"平空",
+    FLIP_TO_SHORT:"反手做空",FLIP_TO_LONG:"反手做多",ADD_LONG:"加多",REDUCE_LONG:"减多",
+    ADD_SHORT:"加空",REDUCE_SHORT:"减空",POSITION_CHANGE:"调仓"
+  })[a]||a}
+  function sideCn(s){return s==="LONG"?"多头":s==="SHORT"?"空头":s||"—"}
+  function directionCn(s){return ({LONG_ONLY:"多头因子",SHORT_ONLY:"空头因子",LONG_SHORT:"多空双向",ASYMMETRIC_LS:"非对称多空",UNRESOLVED:"未定型"})[s]||s||"—"}
+
+  function fillReplaySelectors(){
+    const alphas=(replayIndex.alphas||[]);
+    if(!alphas.length){
+      $("#replayNotice").textContent="当前正式结果还没有生成交易回放数据。安装分析升级后，重新运行一次现有 17 个因子即可生成；不会新增 Alpha。";
+      replayAlpha.disabled=true;replayMonth.disabled=true;replaySide.disabled=true;
+      return false;
+    }
+    replayAlpha.innerHTML=alphas.map(a=>`<option value="${esc(a.alpha_id)}">${esc(a.alpha_id)} · ${esc(directionCn(a.direction_type_train))}</option>`).join("");
+    replayMonth.innerHTML=(replayIndex.months||[]).map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join("");
+    if(replayIndex.months?.length) replayMonth.value=replayIndex.months[replayIndex.months.length-1];
+    $("#replayNotice").textContent=`Test 仍锁定。K线显示 ${replayIndex.bar_minutes||15}min；交易轨迹按 1min 策略计算。10x 风险为不利价格波动代理，不等同于 Binance 精确强平价。`;
+    return true;
+  }
+
+  async function fetchJson(path){
+    const r=await fetch(path,{cache:"no-store"});
+    if(!r.ok) throw new Error(path+" "+r.status);
+    return r.json();
+  }
+
+  function renderReplayStats(){
+    const id=replayAlpha.value,d=diagFor(id),f=currentFactorReplay||{};
+    const cards=[
+      ["方向类型",directionCn(f.direction_type_train||d.direction_type_train)],
+      ["主导方向",sideCn(f.dominant_side_train||d.dominant_side_train)],
+      ["Val BTC Beta",fmt(f.beta?.validation_btc??d.combined_val_beta_btc_daily,3)],
+      ["Val ETH Beta",fmt(f.beta?.validation_eth??d.combined_val_beta_eth_daily,3)],
+      ["Val Residual Sharpe",fmt(f.beta?.validation_residual_sharpe??d.combined_val_residual_sharpe_daily,2)],
+      ["Val 多头 Sharpe",fmt(d.long_val_net_sharpe_daily,2)],
+      ["Val 空头 Sharpe",fmt(d.short_val_net_sharpe_daily,2)]
+    ];
+    $("#replayStats").innerHTML=cards.map(x=>`<div class="replayStat"><div class="rk">${esc(x[0])}</div><div class="rv">${esc(x[1])}</div></div>`).join("");
+  }
+
+  function monthBounds(month){
+    const [y,m]=month.split("-").map(Number);
+    const start=Date.UTC(y,m-1,1),end=Date.UTC(y,m,1);
+    return [start,end];
+  }
+
+  function filteredEpisodes(){
+    if(!currentFactorReplay)return[];
+    const [start,end]=monthBounds(replayMonth.value),side=replaySide.value;
+    return (currentFactorReplay.episodes||[]).filter(e=>e.exit_time_ms>=start&&e.entry_time_ms<end&&(!side||e.side===side));
+  }
+  function filteredEvents(){
+    if(!currentFactorReplay)return[];
+    const [start,end]=monthBounds(replayMonth.value),side=replaySide.value;
+    return (currentFactorReplay.events||[]).filter(e=>{
+      if(e.timestamp_ms<start||e.timestamp_ms>=end)return false;
+      if(!side)return true;
+      const np=Number(e.new_position),pp=Number(e.prev_position);
+      return side==="LONG"?(np>0||pp>0):(np<0||pp<0);
+    });
+  }
+
+  function drawTriangle(ctx,x,y,up,color){
+    ctx.fillStyle=color;ctx.beginPath();
+    if(up){ctx.moveTo(x,y-6);ctx.lineTo(x-5,y+4);ctx.lineTo(x+5,y+4)}
+    else{ctx.moveTo(x,y+6);ctx.lineTo(x-5,y-4);ctx.lineTo(x+5,y-4)}
+    ctx.closePath();ctx.fill();
+  }
+
+  function drawReplay(){
+    const canvas=$("#replayCanvas"),ctx=canvas.getContext("2d");
+    const dpr=window.devicePixelRatio||1,w=Math.max(canvas.clientWidth,700),h=430;
+    canvas.width=Math.floor(w*dpr);canvas.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);ctx.fillStyle="#091019";ctx.fillRect(0,0,w,h);
+    const rows=currentMarket?.rows||[];
+    if(!rows.length){ctx.fillStyle="#92a4b8";ctx.fillText("暂无 K 线数据",20,30);return}
+
+    const P={l:62,r:18,t:18,b:34},pw=w-P.l-P.r,ph=h-P.t-P.b;
+    const lows=rows.map(r=>Number(r[3])),highs=rows.map(r=>Number(r[2]));
+    let lo=Math.min(...lows),hi=Math.max(...highs);const pad=(hi-lo)*.04||1;lo-=pad;hi+=pad;
+    const X=i=>P.l+(i+.5)/rows.length*pw,Y=v=>P.t+(hi-v)/(hi-lo)*ph;
+    const tx=t=>{
+      const t0=Number(rows[0][0]),t1=Number(rows[rows.length-1][0]);
+      return P.l+(t-t0)/(t1-t0||1)*pw;
+    };
+
+    // Grid
+    ctx.strokeStyle="#223042";ctx.lineWidth=1;ctx.font="9px system-ui";ctx.fillStyle="#92a4b8";
+    for(let k=0;k<=5;k++){const y=P.t+k*ph/5;ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(w-P.r,y);ctx.stroke();const v=hi-k*(hi-lo)/5;ctx.fillText(v.toFixed(0),5,y+3)}
+
+    // Holding intervals
+    for(const e of filteredEpisodes()){
+      const x0=Math.max(P.l,tx(e.entry_time_ms)),x1=Math.min(w-P.r,tx(e.exit_time_ms));
+      ctx.fillStyle=e.side==="LONG"?"rgba(105,214,151,.11)":"rgba(255,125,134,.11)";
+      ctx.fillRect(x0,P.t,Math.max(1,x1-x0),ph);
+    }
+
+    // Candles
+    const cw=Math.max(1,Math.min(5,pw/rows.length*.7));
+    rows.forEach((r,i)=>{
+      const o=+r[1],hh=+r[2],ll=+r[3],c=+r[4],x=X(i),up=c>=o;
+      ctx.strokeStyle=up?"#69d697":"#ff7d86";ctx.fillStyle=ctx.strokeStyle;
+      ctx.beginPath();ctx.moveTo(x,Y(hh));ctx.lineTo(x,Y(ll));ctx.stroke();
+      const y1=Y(Math.max(o,c)),y2=Y(Math.min(o,c));ctx.fillRect(x-cw/2,y1,cw,Math.max(1,y2-y1));
+    });
+
+    // Major trade markers; add/reduce are small dots.
+    for(const e of filteredEvents()){
+      const x=tx(e.timestamp_ms),y=Y(Number(e.price)),a=e.action;
+      if(x<P.l||x>w-P.r)continue;
+      if(a==="OPEN_LONG"||a==="FLIP_TO_LONG")drawTriangle(ctx,x,y,true,"#69d697");
+      else if(a==="CLOSE_LONG")drawTriangle(ctx,x,y,false,"#eac85f");
+      else if(a==="OPEN_SHORT"||a==="FLIP_TO_SHORT")drawTriangle(ctx,x,y,false,"#ff7d86");
+      else if(a==="CLOSE_SHORT")drawTriangle(ctx,x,y,true,"#eac85f");
+      else{ctx.fillStyle="#7aaaff";ctx.beginPath();ctx.arc(x,y,2.2,0,Math.PI*2);ctx.fill()}
+    }
+
+    // Month labels
+    ctx.fillStyle="#92a4b8";ctx.font="9px system-ui";
+    for(let k=0;k<=4;k++){const i=Math.min(rows.length-1,Math.floor(k*(rows.length-1)/4));const dt=new Date(rows[i][0]);ctx.fillText(`${dt.getUTCMonth()+1}/${dt.getUTCDate()}`,X(i)-12,h-10)}
+  }
+
+  function renderReplayTrades(){
+    const eps=filteredEpisodes().sort((a,b)=>a.entry_time_ms-b.entry_time_ms);
+    const cols=["方向","开仓","平仓","持仓(分)","净收益","MAE","MFE","持仓内最大回撤","10x风险"];
+    $("#replayTradesTable").innerHTML="<thead><tr>"+cols.map(c=>`<th>${c}</th>`).join("")+"</tr></thead><tbody>"+
+      (eps.length?eps.map(e=>`<tr><td>${sideCn(e.side)}</td><td>${esc(e.entry_time)}</td><td>${esc(e.exit_time)}</td><td>${esc(e.holding_minutes)}</td><td>${pct(e.net_return,2)}</td><td>${pct(e.mae,2)}</td><td>${pct(e.mfe,2)}</td><td>${pct(e.holding_max_drawdown,2)}</td><td><span class="pill ${e.risk_10x==="OK"?"pass":"research"}">${riskText(e.risk_10x)}</span></td></tr>`).join(""):"<tr><td colspan='9'>本月没有符合筛选条件的持仓区间。</td></tr>")+"</tbody>";
+  }
+
+  async function loadReplay(){
+    if(!replayIndex.alphas?.length)return;
+    try{
+      const id=replayAlpha.value,month=replayMonth.value,bar=replayIndex.bar_minutes||15;
+      [currentFactorReplay,currentMarket]=await Promise.all([
+        fetchJson(`replay/factors/${encodeURIComponent(id)}.json`),
+        fetchJson(`replay/market_${bar}m/${encodeURIComponent(month)}.json`)
+      ]);
+      renderReplayStats();drawReplay();renderReplayTrades();
+    }catch(e){
+      $("#replayNotice").textContent="回放数据加载失败："+String(e.message||e);
+    }
+  }
+
+  if(fillReplaySelectors()){
+    replayAlpha.addEventListener("change",loadReplay);replayMonth.addEventListener("change",loadReplay);replaySide.addEventListener("change",()=>{drawReplay();renderReplayTrades()});
+    $("#replayPrev").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>0){replayMonth.value=a[i-1];loadReplay()}};
+    $("#replayNext").onclick=()=>{const a=replayIndex.months||[],i=a.indexOf(replayMonth.value);if(i>=0&&i<a.length-1){replayMonth.value=a[i+1];loadReplay()}};
+    window.addEventListener("resize",()=>{if(currentMarket)drawReplay()});
+    loadReplay();
+  }
+
   $("#footer").textContent=`正式结果策略：${D.officialPolicy} · 页面由 GitHub 构建 · ${state.updated_at_utc||manifest.created_at_utc||""}`;
 })().catch(err=>{
   document.body.innerHTML=`<pre style="padding:30px;color:#ff7d86;background:#080c12">Dashboard 加载失败：\n${String(err.stack||err)}</pre>`;

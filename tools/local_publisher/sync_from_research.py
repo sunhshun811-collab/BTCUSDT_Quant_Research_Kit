@@ -32,6 +32,12 @@ RESULT_FILES = [
     "yearly_metrics.csv",
     "summary.json",
 ]
+ENHANCED_RESULT_FILES = [
+    "factor_diagnostics.csv",
+    "trade_ledger.csv",
+    "trade_events.csv",
+    "replay_index.json",
+]
 
 def sha_file(path: Path) -> str:
     h=hashlib.sha256()
@@ -117,6 +123,12 @@ def copy_official_results(research_root:Path,repo_root:Path):
     reset_dir(latest)
     for name in RESULT_FILES:
         copy_file(src/name,latest/name)
+    for name in ENHANCED_RESULT_FILES:
+        copy_file(src/name,latest/name)
+
+    replay_src=src/"replay"
+    if replay_src.exists():
+        shutil.copytree(replay_src,latest/"replay")
 
     dq=research_root/"data"/"processed"/"data_quality.json"
     copy_file(dq,latest/"data_quality.json")
@@ -129,9 +141,10 @@ def make_manifest(repo_root:Path,latest:Path):
     lb=read_leaderboard(latest/"alpha_leaderboard.csv")
     candidate_count=sum(as_bool(r.get("phase2_candidate")) for r in lb)
     content_h=hashlib.sha256()
-    for name in RESULT_FILES:
-        content_h.update(name.encode())
-        content_h.update(sha_file(latest/name).encode())
+    for name in RESULT_FILES + ENHANCED_RESULT_FILES:
+        if (latest/name).exists():
+            content_h.update(name.encode())
+            content_h.update(sha_file(latest/name).encode())
     content_hash=content_h.hexdigest()
 
     manifest={
@@ -158,7 +171,7 @@ def append_run_if_changed(repo_root:Path,manifest:dict,lb:list,force=False):
     official=repo_root/"official"
     state_path=official/"state.json"
     old=read_json(state_path,{})
-    changed=force or old.get("content_hash")!=manifest["content_hash"]
+    changed=(force or old.get("content_hash")!=manifest["content_hash"] or old.get("research_code_hash")!=manifest["research_code_hash"])
 
     runs_dir=repo_root/"runs"
     runs_dir.mkdir(parents=True,exist_ok=True)
